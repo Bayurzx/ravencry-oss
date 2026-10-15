@@ -1,0 +1,493 @@
+{
+  "name": "WF-02 FLASH Broadcast",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "flash-broadcast",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        -112
+      ],
+      "id": "df037424-25d3-4c87-b1ad-d026c80f2008",
+      "name": "Webhook Trigger",
+      "webhookId": "e265932b-7586-4d24-ace8-5e9a3cb0bb22",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "lAQ74NPhRqUGmqVd",
+          "name": "X-WEBHOOK-SECRET"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  c.id AS case_id,\n  c.status,\n  c.alert_tier,\n  c.circumstance,\n  c.last_seen_location,\n  c.last_seen_lga,\n  c.last_seen_state,\n  ST_Y(c.last_seen_coords::geometry) AS last_seen_lat,\n  ST_X(c.last_seen_coords::geometry) AS last_seen_lon,\n  c.last_seen_time,\n  c.input_channel,\n  c.language,\n  c.raw_report,\n  c.trust_score,\n  c.qwen_confidence,\n  p.id AS person_id,\n  p.full_name AS person_name,\n  p.age_estimate,\n  p.gender,\n  p.clothing_desc,\n  p.distinguishing,\n  p.photo_s3_key\nFROM cases c\nLEFT JOIN persons p ON c.person_id = p.id\nWHERE c.id = '{{ $json.case_id }}' OR c.id = '{{ $json.body.case_id }}';\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        224,
+        -112
+      ],
+      "id": "139649eb-cb72-4dbe-89c4-816661271822",
+      "name": "Fetch Case",
+      "credentials": {
+        "postgres": {
+          "id": "3D3O2UGu1nbS6i0x",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7bbd3fe3-3b8a-4daf-9b9a-0b82f6d0c696",
+              "name": "case_id",
+              "value": "={{ $node[\"Fetch Case\"].json.case_id }}",
+              "type": "string"
+            },
+            {
+              "id": "f1e98e29-d309-4fc9-802d-f32af05dee25",
+              "name": "person_name",
+              "value": "={{ $node[\"Fetch Case\"].json.person_name }}",
+              "type": "string"
+            },
+            {
+              "id": "7989d30d-4ea3-43fb-85af-8fa807afb340",
+              "name": "age_estimate",
+              "value": "={{ $node[\"Fetch Case\"].json.age_estimate }}",
+              "type": "string"
+            },
+            {
+              "id": "bfc27024-e10e-43f6-8fb9-17108e8ca566",
+              "name": "gender",
+              "value": "={{ $node[\"Fetch Case\"].json.gender }}",
+              "type": "string"
+            },
+            {
+              "id": "9d2d7ab2-886a-4b84-b95c-30a5d2e4ac6f",
+              "name": "clothing_desc",
+              "value": "={{ $node[\"Fetch Case\"].json.clothing_desc }}",
+              "type": "string"
+            },
+            {
+              "id": "267269a5-e1c0-425a-b902-d85ebd7e83a3",
+              "name": "distinguishing",
+              "value": "={{ $node[\"Fetch Case\"].json.distinguishing }}",
+              "type": "string"
+            },
+            {
+              "id": "572eed96-4344-4e49-83a9-d7068270b281",
+              "name": "photo_s3_key",
+              "value": "={{ $node[\"Fetch Case\"].json.photo_s3_key }}",
+              "type": "string"
+            },
+            {
+              "id": "85859263-aaf7-4a1b-8ce7-2ef2f5f6720a",
+              "name": "last_seen_location",
+              "value": "={{ $node[\"Fetch Case\"].json.last_seen_location }}",
+              "type": "string"
+            },
+            {
+              "id": "24e85079-6e98-458f-b38c-fc8099fd183f",
+              "name": "last_seen_lga",
+              "value": "={{ $node[\"Fetch Case\"].json.last_seen_lga }}",
+              "type": "string"
+            },
+            {
+              "id": "21bf7ddc-0cca-4af7-a879-373b42402a67",
+              "name": "last_seen_state",
+              "value": "={{ $node[\"Fetch Case\"].json.last_seen_state }}",
+              "type": "string"
+            },
+            {
+              "id": "2dde790d-f31d-42ff-8747-7ab7d2081f5f",
+              "name": "last_seen_lat",
+              "value": "={{ $node[\"Fetch Case\"].json.last_seen_lat }}",
+              "type": "string"
+            },
+            {
+              "id": "3962f4b6-6c88-4766-b4b5-3bacae5d2abc",
+              "name": "last_seen_lon",
+              "value": "={{ $node[\"Fetch Case\"].json.last_seen_lon }}",
+              "type": "string"
+            },
+            {
+              "id": "993a9926-d235-41de-8edb-3195e2361be2",
+              "name": "last_seen_time",
+              "value": "={{ $node[\"Fetch Case\"].json.last_seen_time }}",
+              "type": "string"
+            },
+            {
+              "id": "fa62bcff-8b11-4481-a408-7709fa116cb4",
+              "name": "alert_tier",
+              "value": "={{ $node[\"Fetch Case\"].json.alert_tier }}",
+              "type": "string"
+            },
+            {
+              "id": "23cbc43d-f129-494f-bc52-9e6c8e129a8c",
+              "name": "circumstance",
+              "value": "={{ $node[\"Fetch Case\"].json.circumstance }}",
+              "type": "string"
+            },
+            {
+              "id": "9ff4b45c-4cbf-43b2-8889-6fb2c25cbf90",
+              "name": "input_channel",
+              "value": "={{ $node[\"Fetch Case\"].json.input_channel }}",
+              "type": "string"
+            },
+            {
+              "id": "9d4e5d12-dde8-447e-88b2-3dc0a139ec19",
+              "name": "language",
+              "value": "={{ $node[\"Fetch Case\"].json.language }}",
+              "type": "string"
+            },
+            {
+              "id": "1908d050-e494-492f-a201-a454c7aecd00",
+              "name": "trust_score",
+              "value": "={{ $node[\"Fetch Case\"].json.trust_score }}",
+              "type": "string"
+            },
+            {
+              "id": "ace8b056-d179-4c98-bc07-f93b308fd477",
+              "name": "alert_id",
+              "value": "={{ $('Webhook Trigger').item.json.alert_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        -112
+      ],
+      "id": "1d895522-3312-4ce6-8f6f-83c36343c11e",
+      "name": "Transform Case Payload"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- FLASH alerts: 50km radius. PRIORITY: 25km. ROUTINE: 10km.\n-- Returns subscriber_id for SMS lookup, push subscription data for Web Push.\nSELECT\n  s.id AS subscriber_id,\n  s.phone_hash,              -- SHA-256 — for dedup only, NOT for SMS\n  s.state,\n  s.lga,\n  s.whatsapp_opted_in,\n  ST_Distance(s.location, ST_SetSRID(ST_MakePoint({{ $node[\"Fetch Case\"].json.last_seen_lon }}, {{ $node[\"Fetch Case\"].json.last_seen_lat }}), 4326)::geography) / 1000 AS distance_km,\n  ps.endpoint AS push_endpoint,\n  ps.p256dh AS push_p256dh,\n  ps.auth AS push_auth\nFROM subscribers s\nLEFT JOIN push_subscriptions ps ON s.id = ps.subscriber_id\nWHERE\n  s.active = TRUE\n  AND s.location IS NOT NULL\n  AND ST_DWithin(\n    s.location,\n    ST_SetSRID(ST_MakePoint({{ $node[\"Fetch Case\"].json.last_seen_lon }}, {{ $node[\"Fetch Case\"].json.last_seen_lat }}), 4326)::geography,\n    CASE\n      WHEN '{{ $json.alert_tier }}' = 'FLASH' THEN 50000\n      WHEN '{{ $json.alert_tier }}' = 'PRIORITY' THEN 25000\n      ELSE 10000\n    END\n  )\nORDER BY distance_km ASC;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        672,
+        -112
+      ],
+      "id": "e8ad638a-db8b-444f-8b58-fb6f32a3b837",
+      "name": "Geofence",
+      "credentials": {
+        "postgres": {
+          "id": "3D3O2UGu1nbS6i0x",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SMS_SERVICE_URL }}/sms/broadcast-by-subscribers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"subscriber_ids\": {{ JSON.stringify($items(\"Geofence\").map(s => s.json.subscriber_id).filter(Boolean)) }},\n  \"case\": {\n    \"case_id\": \"{{ $('Fetch Case').item.json.case_id }}\",\n    \"person_name\": \"{{ $('Fetch Case').item.json.person_name }}\",\n    \"age_estimate\": {{ $('Fetch Case').item.json.age_estimate }},\n    \"gender\": \"{{ $('Fetch Case').item.json.gender }}\",\n    \"last_seen_location\": \"{{ $('Fetch Case').item.json.last_seen_location }}\",\n    \"last_seen_lga\": \"{{ $('Fetch Case').item.json.last_seen_lga }}\",\n    \"last_seen_state\": \"{{ $('Fetch Case').item.json.last_seen_state }}\",\n    \"alert_tier\": \"{{ $('Fetch Case').item.json.alert_tier }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        896,
+        -112
+      ],
+      "id": "7f499fd3-8847-4da4-a1b0-df24f8b00a26",
+      "name": "SMS Broadcast",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "0Cne48EISeIXaHng",
+          "name": "X-SERVICE-AUTH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_GATEWAY_URL }}/api/internal/push-broadcast",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"case\": {\n    \"case_id\": \"{{ $('Fetch Case').item.json.case_id }}\",\n    \"person_name\": \"{{ $('Fetch Case').item.json.person_name }}\",\n    \"age_estimate\": {{ $('Fetch Case').item.json.age_estimate }},\n    \"gender\": \"{{ $('Fetch Case').item.json.gender }}\",\n    \"last_seen_location\": \"{{ $('Fetch Case').item.json.last_seen_location }}\",\n    \"last_seen_lga\": \"{{ $('Fetch Case').item.json.last_seen_lga }}\",\n    \"last_seen_state\": \"{{ $('Fetch Case').item.json.last_seen_state }}\",\n    \"alert_tier\": \"{{ $('Fetch Case').item.json.alert_tier }}\"\n  },\n  \"push_subscriptions\": {{ JSON.stringify($items(\"Geofence\").filter(s => s.json.push_endpoint).map(s => ({ endpoint: s.json.push_endpoint, keys: { p256dh: s.json.push_p256dh, auth: s.json.push_auth } }))) }}\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1120,
+        -112
+      ],
+      "id": "4116adcc-d75a-49c1-a002-e786f5ab59e6",
+      "name": "Push Notification Broadcast",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "lAQ74NPhRqUGmqVd",
+          "name": "X-WEBHOOK-SECRET"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TELEGRAM_SERVICE_URL }}/telegram/broadcast",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"case\": {\n    \"case_id\": \"{{ $json.case_id }}\",\n    \"person_name\": \"{{ $json.person_name }}\",\n    \"age_estimate\": {{ $json.age_estimate }},\n    \"gender\": \"{{ $json.gender }}\",\n    \"clothing_desc\": \"{{ $json.clothing_desc }}\",\n    \"distinguishing\": \"{{ $json.distinguishing }}\",\n    \"photo_s3_key\": \"{{ $json.photo_s3_key }}\",\n    \"last_seen_location\": \"{{ $json.last_seen_location }}\",\n    \"last_seen_lga\": \"{{ $json.last_seen_lga }}\",\n    \"last_seen_state\": \"{{ $json.last_seen_state }}\",\n    \"last_seen_lat\": {{ $json.last_seen_lat }},\n    \"last_seen_lon\": {{ $json.last_seen_lon }},\n    \"last_seen_time\": \"{{ $json.last_seen_time }}\",\n    \"alert_tier\": \"{{ $json.alert_tier }}\",\n    \"circumstance\": \"{{ $json.circumstance }}\"\n  }\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        80
+      ],
+      "id": "16fdd4eb-5af9-475d-b2e6-da1a4f15e1a3",
+      "name": "Telegram Broadcast",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlTzT1zK1F8XpGZD",
+          "name": "X-RAVENCRY-AUTH"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NAPTIP_SERVICE_URL }}/naptip/webhook",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"alert_id\": \"{{ $json.case_id }}\",\n  \"type\": \"MISSING_CHILD\",\n  \"tier\": \"{{ $json.alert_tier }}\",\n  \"person\": {\n    \"name\": \"{{ $json.person_name }}\",\n    \"age\": {{ $json.age_estimate }},\n    \"gender\": \"{{ $json.gender }}\",\n    \"clothing\": \"{{ $json.clothing_desc }}\",\n    \"distinguishing_features\": \"{{ $json.distinguishing }}\"\n  },\n  \"location\": {\n    \"place\": \"{{ $json.last_seen_location }}\",\n    \"lga\": \"{{ $json.last_seen_lga }}\",\n    \"state\": \"{{ $json.last_seen_state }}\",\n    \"lat\": {{ $json.last_seen_lat }},\n    \"lon\": {{ $json.last_seen_lon }}\n  },\n  \"circumstance\": \"{{ $json.circumstance }}\",\n  \"reported_at\": \"{{ $json.last_seen_time }}\",\n  \"source\": \"RAVENCRY-Citizen-Report\",\n  \"action\": \"ALERT\"\n}\n",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        -304
+      ],
+      "id": "c2511b85-c1f5-425a-9574-a39dca4cc8a0",
+      "name": "NAPTIP Bridge (Mock)"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE alerts\nSET\n  status = 'broadcast',\n  broadcast_at = NOW(),\n  channels = ARRAY['telegram', 'sms', 'push', 'naptip'],\n  telegram_sent = TRUE,\n  sms_count = {{ $items(\"Geofence\").length }},\n  naptip_sent = TRUE\nWHERE case_id = '{{ $('Fetch Case').item.json.case_id }}'\n  AND status = 'approved'\nRETURNING id, status, sms_count, broadcast_at;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        880,
+        80
+      ],
+      "id": "c6d88295-dc61-4454-aa5d-ea905afaea5c",
+      "name": "UPDATE Alerts",
+      "credentials": {
+        "postgres": {
+          "id": "3D3O2UGu1nbS6i0x",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1088,
+        80
+      ],
+      "id": "79befd2b-3a81-442f-a9d2-39715b852db9",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {
+    "Webhook Trigger": [
+      {
+        "json": {
+          "case_id": "NR-2026-000003",
+          "alert_id": "550e8400-e29b-41d4-a716-446655440000",
+          "tier": "FLASH",
+          "auto_approved": false,
+          "approved_by": "operator-uuid",
+          "approved_at": "2026-06-27T10:30:00Z"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Case",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Case": {
+      "main": [
+        [
+          {
+            "node": "Transform Case Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Case Payload": {
+      "main": [
+        [
+          {
+            "node": "Geofence",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Telegram Broadcast",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "NAPTIP Bridge (Mock)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Geofence": {
+      "main": [
+        [
+          {
+            "node": "SMS Broadcast",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMS Broadcast": {
+      "main": [
+        [
+          {
+            "node": "Push Notification Broadcast",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Push Notification Broadcast": {
+      "main": [
+        []
+      ]
+    },
+    "Telegram Broadcast": {
+      "main": [
+        [
+          {
+            "node": "UPDATE Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UPDATE Alerts": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1af6712e-4444-4ce8-ad65-d30ebd928b70",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1a73af096ae4e3c694344bcea0ea8606542d8e9fe33e38585d20b0cfe5ba2341"
+  },
+  "id": "xpcR7K45ZvRucjjS",
+  "tags": []
+}

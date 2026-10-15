@@ -1,0 +1,719 @@
+{
+  "name": "WF-01 WhatsApp Intake Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-intake",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f5784cc4-3e6f-4c6a-bb62-c9c37013f486",
+      "name": "Webhook Trigger",
+      "webhookId": "708a614b-1f93-4a58-87cb-206118604a4d",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "lAQ74NPhRqUGmqVd",
+          "name": "X-WEBHOOK-SECRET"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHISPER_SERVICE_URL }}/transcribe",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"audio_id\": \"{{ $json.audio_id }}\" }",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        640,
+        32
+      ],
+      "id": "3d6fc5b9-36ee-4687-a416-ee3ce93a6cc1",
+      "name": "Whisper Transcribe"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        848,
+        224
+      ],
+      "id": "fd5430dd-b70a-4756-ae4a-e8ab46c96c37",
+      "name": "do nothing"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5e322ee3-d423-4db8-b25e-988b6441607e",
+              "name": "text",
+              "value": "={{ $json.transcript }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        848,
+        32
+      ],
+      "id": "22a5765c-3ff1-42c4-84bd-f0d2670b6a05",
+      "name": "Transcript → Text"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8b529195-40b9-40b8-bec6-9f1f5014b22d",
+              "name": "skip_reason",
+              "value": "unsupported-message-type",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        224
+      ],
+      "id": "1094db9c-f425-4ba1-af7b-22f17d986162",
+      "name": "Skip (unsupported)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fc092ba6-228c-4dd2-bbd7-b1e98fdfe2dd",
+              "leftValue": "={{ $json.message_type }}",
+              "rightValue": "audio",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        432,
+        128
+      ],
+      "id": "fb196214-d6df-4b8f-b212-ab54d1c5ef00",
+      "name": "Audio Check"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5506cf0d-9c76-4a2b-a274-22f0bed393ed",
+              "leftValue": "={{ $json.message_type }}",
+              "rightValue": "text",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "83bb9bf5-11f3-4fba-b916-53e69c6e26d6",
+              "leftValue": "={{ $json.message_type }}",
+              "rightValue": "image",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f3611c61-e85c-40f2-869e-23c72713c6d7",
+      "name": "Message Type Branch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.LLM_SERVICE_URL }}/extract",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $json.text }}\",\n  \"language\": \"auto\"\n}\n",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1056,
+        32
+      ],
+      "id": "196c45e6-9a43-4c1c-a296-b68a2680779d",
+      "name": "QW-01 Extract"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.LLM_SERVICE_URL }}/classify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"person\": {\n    \"person_name\": {{ JSON.stringify($json.person_name ?? \"Unknown\") }},\n    \"age_estimate\": {{ JSON.stringify($json.age_estimate ?? null) }},\n    \"gender\": {{ JSON.stringify($json.gender ?? \"unknown\") }},\n    \"circumstance\": {{ JSON.stringify($json.circumstance ?? \"unknown\") }},\n    \"num_victims\": {{ JSON.stringify($json.num_victims ?? 1) }}\n  },\n  \"location\": {\n    \"last_seen_state\": {{ JSON.stringify($json.last_seen_state ?? \"\") }},\n    \"last_seen_lga\": {{ JSON.stringify($json.last_seen_lga ?? \"\") }},\n    \"last_seen_location\": {{ JSON.stringify($json.last_seen_location ?? \"\") }}\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1264,
+        32
+      ],
+      "id": "c492d899-8c06-4ffa-93a8-1087663cc189",
+      "name": "QW-02 Classify"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2e3575f0-075e-4c39-b2c7-5e721bbbeacc",
+              "name": "person_name",
+              "value": "={{ $node[\"QW-01 Extract\"].json.person_name }}",
+              "type": "string"
+            },
+            {
+              "id": "9d1fbcac-576e-4b6c-a068-1025d0215bc8",
+              "name": "age_estimate",
+              "value": "={{ $node[\"QW-01 Extract\"].json.age_estimate }}",
+              "type": "string"
+            },
+            {
+              "id": "87d3de69-48d1-4537-8a13-1894899a6846",
+              "name": "gender",
+              "value": "={{ $node[\"QW-01 Extract\"].json.gender }}",
+              "type": "string"
+            },
+            {
+              "id": "8a6fca2f-67c6-47d5-9186-455eb56dcbec",
+              "name": "clothing_desc",
+              "value": "={{ $node[\"QW-01 Extract\"].json.clothing_desc }}",
+              "type": "string"
+            },
+            {
+              "id": "7f517257-5fc6-4638-b7b2-a77bb7238e87",
+              "name": "distinguishing",
+              "value": "={{ $node[\"QW-01 Extract\"].json.distinguishing_features }}",
+              "type": "string"
+            },
+            {
+              "id": "3fcc710d-cc58-48c9-9a22-0add7d936467",
+              "name": "circumstance",
+              "value": "={{ $node[\"QW-01 Extract\"].json.circumstance }}",
+              "type": "string"
+            },
+            {
+              "id": "4dc24e73-d0cc-4d6f-a0a4-9bad077bc228",
+              "name": "last_seen_location",
+              "value": "={{ $node[\"QW-01 Extract\"].json.last_seen_location }}",
+              "type": "string"
+            },
+            {
+              "id": "f646c019-72a0-402a-a5be-063ab92dee31",
+              "name": "last_seen_lga",
+              "value": "={{ $node[\"QW-01 Extract\"].json.last_seen_lga }}",
+              "type": "string"
+            },
+            {
+              "id": "f9578e9c-e2db-4d41-9e50-0c47ba841e64",
+              "name": "last_seen_state",
+              "value": "={{ $node[\"QW-01 Extract\"].json.last_seen_state }}",
+              "type": "string"
+            },
+            {
+              "id": "a8158ff0-3875-4a4d-aef8-2de5024265d5",
+              "name": "last_seen_time",
+              "value": "={{ $node[\"QW-01 Extract\"].json.last_seen_time }}",
+              "type": "string"
+            },
+            {
+              "id": "83f7a3ed-c226-473b-b5ac-78c5228df0b8",
+              "name": "language_code",
+              "value": "={{ $node[\"QW-01 Extract\"].json.language_detected === \"english\" ? \"en\" : $node[\"QW-01 Extract\"].json.language_detected === \"hausa\" ? \"ha\" : $node[\"QW-01 Extract\"].json.language_detected === \"yoruba\" ? \"yo\" : $node[\"QW-01 Extract\"].json.language_detected === \"igbo\" ? \"ig\" : $node[\"QW-01 Extract\"].json.language_detected === \"pidgin\" ? \"pcm\" : ($node[\"QW-01 Extract\"].json.language_detected || \"en\") }}",
+              "type": "string"
+            },
+            {
+              "id": "19608225-964f-464c-9a45-cb6c51303faf",
+              "name": "qwen_confidence",
+              "value": "={{ $node[\"QW-01 Extract\"].json.confidence || 0.7 }}",
+              "type": "number"
+            },
+            {
+              "id": "43db481b-1796-423c-88c7-73612716e0b7",
+              "name": "alert_tier",
+              "value": "={{ $json.tier || 'PRIORITY' }}",
+              "type": "string"
+            },
+            {
+              "id": "0e515608-b51d-4eaf-b470-75e71d1cede6",
+              "name": "severity_reason",
+              "value": "={{ $json.reasoning || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "de674b4e-6e43-4e8e-814f-3a16e49c1fc8",
+              "name": "trust_score",
+              "value": "={{ $json.confidence || 0.7 }}",
+              "type": "number"
+            },
+            {
+              "id": "f9c5301d-28b8-46ce-be7a-f08484df14f3",
+              "name": "is_child",
+              "value": "={{ $json.is_child }}",
+              "type": "boolean"
+            },
+            {
+              "id": "e4dbccd0-14a8-4a9d-abe0-6cf4619d58ef",
+              "name": "is_hotspot",
+              "value": "={{ $json.is_hotspot }}",
+              "type": "boolean"
+            },
+            {
+              "id": "26596594-1f86-4c64-9d74-9426e2f0453b",
+              "name": "phone",
+              "value": "={{ $('Webhook Trigger').item.json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "29592203-47e4-44b6-87f8-825689de7996",
+              "name": "message_id",
+              "value": "={{ $('Webhook Trigger').item.json.message_id }}",
+              "type": "string"
+            },
+            {
+              "id": "0dc861a3-11d2-49c4-9eb7-8f6a7fc893e8",
+              "name": "raw_text",
+              "value": "={{ $('Webhook Trigger').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1472,
+        32
+      ],
+      "id": "aea1da11-cb17-4653-a696-426dd014894a",
+      "name": "Normalise"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO persons (full_name, age_estimate, gender, clothing_desc, distinguishing)\nVALUES (\n  '{{ $json.person_name || \"Unknown\" }}',\n  {{ $json.age_estimate ?? \"NULL\" }},\n  '{{ $json.gender || \"unknown\" }}',\n  '{{ $json.clothing_desc || \"\" }}',\n  '{{ $json.distinguishing || \"\" }}'\n)\nRETURNING id;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1680,
+        32
+      ],
+      "id": "9e457aff-b34c-4463-b568-1b5f10d77c14",
+      "name": "Insert Person",
+      "credentials": {
+        "postgres": {
+          "id": "3D3O2UGu1nbS6i0x",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO cases (\n  person_id, status, alert_tier, circumstance,\n  last_seen_location, last_seen_lga, last_seen_state, last_seen_time,\n  input_channel, language, reporter_phone,\n  raw_report, qwen_confidence, qwen_severity_reason, trust_score\n) VALUES (\n  '{{ $node[\"Insert Person\"].json.id }}',\n  'pending_triage',\n  '{{ $node[\"Normalise\"].json.alert_tier }}',\n  '{{ $node[\"Normalise\"].json.circumstance }}',\n  '{{ $node[\"Normalise\"].json.last_seen_location || \"\" }}',\n  '{{ $node[\"Normalise\"].json.last_seen_lga || \"\" }}',\n  '{{ $node[\"Normalise\"].json.last_seen_state || \"\" }}',\n  {{ $node[\"Normalise\"].json.last_seen_time ? (\"'\" + $node[\"Normalise\"].json.last_seen_time + \"'\") : \"NULL\" }},\n  'whatsapp',\n  '{{ $node[\"Normalise\"].json.language_code || \"en\" }}',\n  '{{ $node[\"Normalise\"].json.phone || \"\" }}',\n  '{{ $node[\"Normalise\"].json.raw_text || \"\" }}',\n  {{ $node[\"Normalise\"].json.qwen_confidence || 0.7 }},\n  '{{ $node[\"Normalise\"].json.severity_reason || \"\" }}',\n  {{ $node[\"Normalise\"].json.trust_score || 0.7 }}\n)\nRETURNING id, status, alert_tier;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1888,
+        32
+      ],
+      "id": "b655b44e-1258-4e7f-98a3-869886202e17",
+      "name": "Insert Case",
+      "credentials": {
+        "postgres": {
+          "id": "3D3O2UGu1nbS6i0x",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77331860-cfcb-4b1c-9ff0-7fe8181fcbc8",
+              "name": "case_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "768d3591-d6a1-4288-9198-c0ea1216f6b3",
+              "name": "phone",
+              "value": "={{ $node[\"Normalise\"].json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "36b10bbc-43c4-47a5-82f7-818d24657547",
+              "name": "last_seen_state",
+              "value": "={{ $node[\"Normalise\"].json.last_seen_state }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2096,
+        32
+      ],
+      "id": "590daef1-dfb1-45ac-ae74-e136326ff713",
+      "name": "Rename Case ID for Reply"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/{{ $env.META_WHATSAPP_API_VERSION || \"v21.0\" }}/{{ $env.META_PHONE_NUMBER_ID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.phone }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"✅ Report received. Case ID: {{ $json.case_id }}\\n\\nWe will alert people in {{ $json.last_seen_state || 'your area' }}. You will receive updates here.\\n\\nShare this ID with police: {{ $json.case_id }}\"\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2304,
+        32
+      ],
+      "id": "dad6669b-cd5e-4aba-ade7-8403e5459f8e",
+      "name": "Send WhatsApp Reply",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "gQjdpe2pyScVPcEw",
+          "name": "Header Auth (META)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"workflow\": \"wf-01-whatsapp-intake\",\n  \"case_id\": \"{{ $node[\"Insert Case\"].json.id }}\",\n  \"status\": \"{{ $node[\"Insert Case\"].json.status }}\",\n  \"timestamp\": \"{{ $now }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2512,
+        32
+      ],
+      "id": "a0489de5-eb4f-4378-938b-d7c0a63d58f8",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {
+    "Webhook Trigger": [
+      {
+        "json": {
+          "channel": "whatsapp",
+          "phone": "2348012345678",
+          "message_id": "wamid.abc123def456",
+          "timestamp": "1719068442",
+          "message_type": "text",
+          "text": "My daughter Fatima age 9 is missing from Maru Market Zamfara"
+        }
+      },
+      {
+        "json": {
+          "channel": "whatsapp",
+          "phone": "2348012345678",
+          "message_id": "wamid.voice001",
+          "timestamp": "1719068500",
+          "message_type": "audio",
+          "audio_id": "audio-abc-123",
+          "audio_mime": "audio/ogg; codecs=opus"
+        }
+      }
+    ],
+    "Whisper Transcribe": [
+      {
+        "json": {
+          "transcript": "An sace ɗana a kasuwar Sabon Gari Kano yau da safe",
+          "language_detected": "ha",
+          "language_name": "Hausa",
+          "language_confidence": 0.987,
+          "duration_seconds": 12.3,
+          "transcription_latency_ms": 3200
+        }
+      }
+    ],
+    "Insert Case": [
+      {
+        "json": {
+          "id": "NR-2026-000007",
+          "status": "pending_triage",
+          "alert_tier": "PRIORITY"
+        }
+      }
+    ],
+    "Rename Case ID for Reply": [
+      {
+        "json": {
+          "id": "NR-2026-000007",
+          "status": "pending_triage",
+          "alert_tier": "PRIORITY",
+          "case_id": "NR-2026-000007",
+          "phone": "2348000000001",
+          "last_seen_state": "Kano"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message Type Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whisper Transcribe": {
+      "main": [
+        [
+          {
+            "node": "Transcript → Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip (unsupported)": {
+      "main": [
+        [
+          {
+            "node": "do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio Check": {
+      "main": [
+        [
+          {
+            "node": "Whisper Transcribe",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip (unsupported)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Type Branch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Audio Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcript → Text": {
+      "main": [
+        [
+          {
+            "node": "QW-01 Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QW-01 Extract": {
+      "main": [
+        [
+          {
+            "node": "QW-02 Classify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QW-02 Classify": {
+      "main": [
+        [
+          {
+            "node": "Normalise",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise": {
+      "main": [
+        [
+          {
+            "node": "Insert Person",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Person": {
+      "main": [
+        [
+          {
+            "node": "Insert Case",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Case": {
+      "main": [
+        [
+          {
+            "node": "Rename Case ID for Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename Case ID for Reply": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Reply": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "98739449-afe5-46fc-848b-b3a97f482ba6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1a73af096ae4e3c694344bcea0ea8606542d8e9fe33e38585d20b0cfe5ba2341"
+  },
+  "id": "TdITNTjkxIk7Xb39",
+  "tags": []
+}

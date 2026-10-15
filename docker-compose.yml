@@ -1,0 +1,381 @@
+# =============================================================================
+# RAVENCRY — Production Docker Compose
+# Deployed on: AWS EC2 t3.large (8GB RAM), Ubuntu 24.04 LTS
+# Compose Specification (no version field — deprecated in Compose v2)
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Caddy — Reverse Proxy (ports 80/443)
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - ravencry-net
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    depends_on:
+      - api
+      - web
+      - n8n
+      - appsmith
+
+  # ---------------------------------------------------------------------------
+  # API Gateway — Express + TypeScript (port 3003)
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+      target: production
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      - DATABASE_URL=${DATABASE_URL}
+      - LLM_SERVICE_URL=http://llm:3002
+      - WHISPER_SERVICE_URL=http://whisper:8000
+      - TELEGRAM_SERVICE_URL=http://telegram:3005
+      - AT_API_KEY=${AT_API_KEY}
+      - AT_USERNAME=${AT_USERNAME}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET}
+      - AUTO_APPROVE_FLASH=${AUTO_APPROVE_FLASH:-false}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET=${S3_BUCKET:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - ravencry-net
+
+  # ---------------------------------------------------------------------------
+  # Crucix Alert Engine (port 3001)
+  # ---------------------------------------------------------------------------
+  crucix:
+    build:
+      context: ./vendor/crucix
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=${DATABASE_URL}
+      - LLM_API_URL=http://llm:3002
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook/flash-alert
+      - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_ALERT_CHANNEL_ID=${TELEGRAM_ALERT_CHANNEL_ID}
+      - TELEGRAM_OPS_CHANNEL_ID=${TELEGRAM_OPS_CHANNEL_ID}
+      - SWEEP_INTERVAL_MS=${SWEEP_INTERVAL_MS:-300000}
+      - ACLED_EMAIL=${ACLED_EMAIL}
+      - ACLED_PASSWORD=${ACLED_PASSWORD}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - ravencry-net
+
+  # ---------------------------------------------------------------------------
+  # LLM / Qwen Triage Service (port 3002)
+  # ---------------------------------------------------------------------------
+  llm:
+    build:
+      context: ./services/llm
+      dockerfile: Dockerfile
+      target: production
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - LLM_PROVIDER=${LLM_PROVIDER:-qwen}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_BASE_URL=${LLM_BASE_URL}
+      - LLM_MODEL=${LLM_MODEL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ravencry-net
+
+  # ---------------------------------------------------------------------------
+  # Telegram Bot — Commands + FLASH Broadcast (port 3005)
+  # ---------------------------------------------------------------------------
+  telegram:
+    build:
+      context: ./services/telegram
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3005
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_ALERT_CHANNEL_ID=${TELEGRAM_ALERT_CHANNEL_ID}
+      - TELEGRAM_OPS_CHANNEL_ID=${TELEGRAM_OPS_CHANNEL_ID}
+      - API_GATEWAY_URL=${API_GATEWAY_URL:-http://api:3003}
+      - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ravencry-net
+
+  # ---------------------------------------------------------------------------
+  # Whisper Service — Audio Transcription (port 8000)
+  # ---------------------------------------------------------------------------
+  whisper:
+    build:
+      context: ./services/whisper
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - WHISPER_MODEL=${WHISPER_MODEL:-small}
+      - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-int8}
+      - FLASK_PORT=8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ravencry-net
+
+  # ---------------------------------------------------------------------------
+  # n8n — Workflow Engine (port 5678)
+  # ---------------------------------------------------------------------------
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    env_file:
+      - .env
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_PERSONALIZATION_ENABLED=false
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - WEBHOOK_URL=https://api.ravencry.cv/
+      - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=${DB_HOST}
+      - DB_POSTGRESDB_PORT=${DB_PORT:-5432}
+      - DB_POSTGRESDB_DATABASE=ravencry
+      - DB_POSTGRESDB_USER=${DB_USER}
+      - DB_POSTGRESDB_PASSWORD=${DB_PASSWORD}
+      - DB_POSTGRESDB_SCHEMA=n8n
+      - DB_POSTGRESDB_SSL_ENABLED=true
+      - DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=false
+      # Service URLs — used by WF-02 nodes via {{ $env.X }}
+      - TELEGRAM_SERVICE_URL=http://telegram:3005
+      - SMS_SERVICE_URL=http://sms:3006
+      - NAPTIP_SERVICE_URL=http://naptip:3008
+      - API_GATEWAY_URL=http://api:3003
+      - OPS_TELEGRAM_CHAT_ID=${TELEGRAM_OPS_CHANNEL_ID}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n-workflows:/home/node/.n8n/workflows:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - ravencry-net
+
+  # ---------------------------------------------------------------------------
+  # SMS Service — Africa's Talking Batch Broadcast (port 3006)
+  # ---------------------------------------------------------------------------
+  sms:
+    build:
+      context: ./services/sms
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3006
+      - AFRICASTALKING_API_KEY=${AT_API_KEY}
+      - AFRICASTALKING_USERNAME=${AT_USERNAME:-sandbox}
+      - AT_SENDER_ID=${AT_SENDER_ID:-RAVENCRY}
+      - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ravencry-net
+
+  # ---------------------------------------------------------------------------
+  # NAPTIP Bridge — Mock NAPTIP Alert Forwarding (port 3008)
+  # ---------------------------------------------------------------------------
+  naptip:
+    build:
+      context: ./services/naptip
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3008:3008"
+    networks:
+      - ravencry-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # USSD Handler — Africa's Talking USSD Menu Tree (port 3007)
+  # ---------------------------------------------------------------------------
+  ussd:
+    build:
+      context: ./services/ussd
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3007:3007"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3007
+      - DATABASE_URL=${DATABASE_URL}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ravencry-net
+
+  # ---------------------------------------------------------------------------
+  # Web — Next.js Frontend (port 3000)
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: production
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - RAVENCRY_API_URL=http://api:3003
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.ravencry.cv}
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - ravencry-net
+
+  # ---------------------------------------------------------------------------
+  # Appsmith — Ops Dashboard (port 8080, internal)
+  # ---------------------------------------------------------------------------
+  appsmith:
+    image: appsmith/appsmith-ce:latest
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - APPSMITH_ENCRYPTION_PASSWORD=${APPSMITH_ENCRYPTION_PASSWORD}
+      - APPSMITH_ENCRYPTION_SALT=${APPSMITH_ENCRYPTION_SALT}
+      - APPSMITH_SUPERVISOR_PASSWORD=${APPSMITH_SUPERVISOR_PASSWORD}
+    volumes:
+      - appsmith_data:/appsmith-stacks
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - ravencry-net
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  ravencry-net:
+    driver: bridge
+    name: ravencry-net
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  caddy_data:
+    name: ravencry-caddy-data
+  caddy_config:
+    name: ravencry-caddy-config
+  n8n_data:
+    name: ravencry-n8n-data
+  appsmith_data:
+    name: ravencry-appsmith-data

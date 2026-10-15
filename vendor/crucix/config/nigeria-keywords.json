@@ -1,0 +1,17 @@
+{
+  "_notice": "Modified for RAVENCRY - see NOTICE.md in this directory.",
+  "kidnapping": {
+    "english": ["kidnap", "abduct", "missing person", "taken", "held hostage", "ransom"],
+    "pidgin": ["dem don carry", "dem snatch am", "e don miss", "dem kidnap"],
+    "hausa": ["an sace", "an yi garkuwa", "batattu", "an tafi da shi"],
+    "yoruba": ["ji", "ji eniyan", "sonu", "eniyan sonu"],
+    "igbo": ["toro onye", "onye efu", "iwe mmadu"]
+  },
+  "locations": {
+    "high_risk_lgas": ["Zamfara", "Kaduna", "Niger", "Katsina", "Kebbi", "Borno", "Yobe", "Sokoto"],
+    "key_routes": ["Abuja-Kaduna expressway", "Lagos-Ibadan expressway", "Benin-Sagamu"],
+    "motor_parks": ["Mile 12 Lagos", "Jabi Abuja", "Kasuwan Shanu Kano"]
+  },
+  "severity_escalators": ["child", "children", "baby", "infant", "school", "student", "multiple", "bus", "mass"],
+  "deescalators": ["found", "rescued", "returned", "safe", "recovered"]
+}

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ravencry — System Architecture</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0e1117;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+
+  .page-title {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 28px;
+  }
+
+  .diagram {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* ── Section labels ── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #475569;
+    text-align: center;
+    margin-bottom: 10px;
+    margin-top: 24px;
+  }
+
+  /* ── Row layout ── */
+  .row {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 10px;
+    flex-wrap: nowrap;
+  }
+  .row.wrap { flex-wrap: wrap; }
+
+  /* ── Connector arrows between rows ── */
+  .connector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 28px;
+    position: relative;
+    margin: 6px 0;
+  }
+  .connector::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: #334155;
+  }
+  .connector .arrow {
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #334155;
+    z-index: 1;
+  }
+  .connector-label {
+    position: absolute;
+    left: calc(50% + 6px);
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #475569;
+    white-space: nowrap;
+    z-index: 2;
+  }
+
+  /* ── Box base ── */
+  .box {
+    border-radius: 7px;
+    border: 1px solid;
+    padding: 9px 13px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+  .box-title {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+  .box-sub {
+    font-size: 10px;
+    font-weight: 400;
+    margin-top: 3px;
+    line-height: 1.3;
+    white-space: nowrap;
+    opacity: 0.75;
+  }
+
+  /* ── Color themes ── */
+  .green  { background: #0d2818; border-color: #166534; color: #86efac; }
+  .green .box-sub  { color: #4ade80; }
+  .blue   { background: #0d1f38; border-color: #1e40af; color: #93c5fd; }
+  .blue .box-sub   { color: #60a5fa; }
+  .purple { background: #1a0d38; border-color: #6d28d9; color: #c4b5fd; }
+  .purple .box-sub { color: #a78bfa; }
+  .amber  { background: #1c1007; border-color: #92400e; color: #fcd34d; }
+  .amber .box-sub  { color: #fbbf24; }
+  .red    { background: #1c0a0a; border-color: #991b1b; color: #fca5a5; }
+  .red .box-sub    { color: #f87171; }
+  .gray   { background: #111827; border-color: #374151; color: #9ca3af; }
+  .gray .box-sub   { color: #6b7280; }
+  .teal   { background: #042f2e; border-color: #0f766e; color: #5eead4; }
+  .teal .box-sub   { color: #2dd4bf; }
+
+  /* ── Region / boundary containers ── */
+  .region {
+    border: 1px dashed;
+    border-radius: 10px;
+    padding: 14px 16px 16px;
+    position: relative;
+    width: 100%;
+  }
+  .region.aws    { border-color: #dc2626; }
+  .region.docker { border-color: #4b5563; }
+  .region.ext    { border-color: #374151; }
+
+  .region-label {
+    position: absolute;
+    top: -9px;
+    left: 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0 6px;
+    background: #0e1117;
+    white-space: nowrap;
+  }
+  .region.aws    .region-label { color: #ef4444; }
+  .region.docker .region-label { color: #6b7280; }
+  .region.ext    .region-label { color: #4b5563; }
+
+  /* ── Annotation pills ── */
+  .annotation {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    color: #f59e0b;
+    background: #1c1007;
+    border: 1px solid #92400e;
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin: 5px 4px 0;
+    white-space: nowrap;
+  }
+
+  .annotations-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0;
+    margin-top: 6px;
+  }
+
+  /* ── Fan-out merge lines ── */
+  .merge-connector {
+    width: 100%;
+    height: 32px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    margin-top: 28px;
+    padding: 14px 20px;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    background: #0a0e16;
+  }
+  .legend-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 12px;
+  }
+  .legend-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 28px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #94a3b8;
+    white-space: nowrap;
+  }
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid;
+  }
+  .legend-line {
+    width: 28px;
+    height: 1px;
+    flex-shrink: 0;
+  }
+  .legend-arrow {
+    width: 28px;
+    height: 12px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .legend-arrow::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+  }
+
+  /* ── SVG fan connector ── */
+  svg.fan { overflow: visible; display: block; }
+</style>
+</head>
+<body>
+
+<p class="page-title">Ravencry — Civic Reporting System · Architecture</p>
+
+<div class="diagram">
+
+  <!-- ══════════════════════════════════ USERS ══════════════════════════════════ -->
+  <p class="section-label">Users</p>
+  <div class="row">
+    <div class="box green" style="width:130px"><span class="box-title">Citizens</span></div>
+    <div style="width:180px"></div>
+    <div class="box teal"  style="width:130px"><span class="box-title">Operators</span></div>
+  </div>
+
+  <!-- ══════════════════════════════ CHANNELS ══════════════════════════════════ -->
+  <p class="section-label">Citizen channels</p>
+  <div class="row">
+    <div class="box green" style="width:110px">
+      <span class="box-title">PWA</span>
+      <span class="box-sub">Vercel</span>
+    </div>
+    <div class="box green" style="width:110px">
+      <span class="box-title">WhatsApp</span>
+      <span class="box-sub">Meta API</span>
+    </div>
+    <div class="box green" style="width:110px">
+      <span class="box-title">Telegram</span>
+      <span class="box-sub">Bot API</span>
+    </div>
+    <div class="box green" style="width:130px">
+      <span class="box-title">USSD</span>
+      <span class="box-sub">Feature phones</span>
+    </div>
+    <div class="box green" style="width:130px">
+      <span class="box-title">SMS</span>
+      <span class="box-sub">No internet needed</span>
+    </div>
+    <div class="box teal" style="width:130px">
+      <span class="box-title">Appsmith</span>
+      <span class="box-sub">Operator dashboard</span>
+    </div>
+  </div>
+
+  <div class="annotations-row">
+    <span class="annotation">★ Feature phones — no internet required</span>
+    <span class="annotation">⇄ SSE — PWA ↔ API Gateway live updates</span>
+  </div>
+
+  <div class="connector"><div class="arrow"></div></div>
+
+  <!-- ══════════════════════════════ EDGE ══════════════════════════════════════ -->
+  <p class="section-label">Edge layer</p>
+  <div class="row">
+    <div class="box gray" style="width:160px">
+      <span class="box-title">Internet / CDN</span>
+      <span class="box-sub">HTTPS</span>
+    </div>
+    <div style="width:20px; display:flex; align-items:center; justify-content:center">
+      <span style="color:#334155; font-size:16px;">→</span>
+    </div>
+    <div class="box gray" style="width:200px">
+      <span class="box-title">Caddy reverse proxy</span>
+      <span class="box-sub">TLS termination · routing</span>
+    </div>
+  </div>
+
+  <div class="connector"><div class="arrow"></div></div>
+
+  <!-- ═══════════════════════════ AWS / ALIBABA BOUNDARY ═══════════════════════════ -->
+  <div class="region aws">
+    <span class="region-label">AWS/Alibaba boundary · ECS · Aurora PostgreSQL · PostgreSQL rate limiting table · S3</span>
+
+    <!-- Docker Compose group -->
+    <div class="region docker" style="margin-top:8px">
+      <span class="region-label">Docker Compose · ECS</span>
+
+      <p class="section-label" style="margin-top:10px">Application layer</p>
+      <div class="row" style="justify-content:center; gap:8px; flex-wrap:wrap">
+        <div class="box blue" style="width:150px">
+          <span class="box-title">API gateway</span>
+          <span class="box-sub">Rate limiting · routing</span>
+        </div>
+        <div class="box blue" style="width:150px">
+          <span class="box-title">Crucix engine</span>
+          <span class="box-sub">Core business logic</span>
+        </div>
+        <div class="box purple" style="width:140px">
+          <span class="box-title">LLM service</span>
+          <span class="box-sub">Qwen API bridge</span>
+        </div>
+        <div class="box purple" style="width:130px">
+          <span class="box-title">Whisper</span>
+          <span class="box-sub">Voice → text</span>
+        </div>
+        <div class="box amber" style="width:100px">
+          <span class="box-title">n8n</span>
+          <span class="box-sub">Workflows</span>
+        </div>
+        <div class="box blue" style="width:150px">
+          <span class="box-title">Telegram service</span>
+          <span class="box-sub">Bot polling</span>
+        </div>
+        <div class="box blue" style="width:150px">
+          <span class="box-title">SMS service</span>
+          <span class="box-sub">Africa's Talking</span>
+        </div>
+        <div class="box blue" style="width:140px">
+          <span class="box-title">USSD service</span>
+          <span class="box-sub">Session management</span>
+        </div>
+      </div>
+      <div class="annotations-row">
+        <span class="annotation">★ One-command deploy: docker compose up -d</span>
+        <span class="annotation">Docker network — internal communication</span>
+      </div>
+    </div>
+
+    <!-- AI Pipeline -->
+    <p class="section-label" style="margin-top:18px">AI processing pipeline</p>
+    <div class="row" style="align-items:center; gap:8px; flex-wrap:wrap; justify-content:center">
+      <div class="box gray" style="width:120px">
+        <span class="box-title">Voice report</span>
+        <span class="box-sub">Audio input</span>
+      </div>
+      <span style="color:#6d28d9; font-size:18px; flex-shrink:0">→</span>
+      <div class="box purple" style="width:130px">
+        <span class="box-title">Whisper</span>
+        <span class="box-sub">Transcription</span>
+      </div>
+      <span style="color:#6d28d9; font-size:18px; flex-shrink:0">→</span>
+      <div class="box purple" style="width:270px; padding:10px 14px">
+        <span class="box-title">Qwen AI</span>
+        <span class="box-sub">Extract · Classify · Anti-fake</span>
+        <span class="box-sub" style="margin-top:4px; opacity:0.9">Hausa · Yoruba · Igbo · Pidgin · English</span>
+      </div>
+    </div>
+    <div class="annotations-row">
+      <span class="annotation">★ Hausa · Yoruba · Igbo · Pidgin · English — code-switching</span>
+    </div>
+
+    <div class="connector"><div class="arrow"></div></div>
+
+    <!-- Workflow -->
+    <p class="section-label">Workflow · orchestration</p>
+    <div class="row" style="align-items:center; gap:8px; flex-wrap:wrap; justify-content:center">
+      <div class="box gray" style="width:160px">
+        <span class="box-title">OSINT feeds</span>
+        <span class="box-sub">GDELT · ACLED · RSS</span>
+      </div>
+      <span style="color:#4b5563; font-size:16px; flex-shrink:0">⤷</span>
+      <div class="box amber" style="width:180px">
+        <span class="box-title">Crucix engine</span>
+        <span class="box-sub">Case management · alerts</span>
+      </div>
+      <span style="color:#92400e; font-size:18px; flex-shrink:0">→</span>
+      <div class="box amber" style="width:180px">
+        <span class="box-title">n8n</span>
+        <span class="box-sub">Broadcast triggers</span>
+      </div>
+    </div>
+    <div class="annotations-row">
+      <span class="annotation">★ Two-way intelligence loop: Report → Alert → Sighting → Case update → New alert ↻</span>
+    </div>
+
+    <div class="connector"><div class="arrow"></div></div>
+
+    <!-- Data layer -->
+    <p class="section-label">Data layer</p>
+    <div class="row" style="gap:10px; align-items:stretch; flex-wrap:wrap; justify-content:center">
+
+      <div class="box red" style="width:230px; align-items:flex-start; text-align:left; padding:12px 14px">
+        <span class="box-title" style="white-space:normal">Aurora PostgreSQL + PostGIS</span>
+        <span class="box-sub" style="white-space:normal; margin-top:5px; line-height:1.5; opacity:0.85">
+          Cases · Persons · Alerts · Sightings<br>
+          Subscribers · LGA coordinates<br>
+          ST_DWithin geo queries
+        </span>
+      </div>
+
+      <div class="box red" style="width:200px; align-items:flex-start; text-align:left; padding:12px 14px">
+        <span class="box-title">PostgreSQL rate limiting table</span>
+        <span class="box-sub" style="white-space:normal; margin-top:5px; line-height:1.5; opacity:0.85">
+          USSD sessions · 24h rate limit<br>
+          Replaces DynamoDB ravencry-sessions
+        </span>
+      </div>
+
+      <div class="box red" style="width:170px; align-items:flex-start; text-align:left; padding:12px 14px">
+        <span class="box-title">S3</span>
+        <span class="box-sub" style="white-space:normal; margin-top:5px; line-height:1.5; opacity:0.85">
+          Audio recordings<br>
+          Photos<br>
+          Attachments
+        </span>
+      </div>
+
+    </div>
+    <div class="annotations-row">
+      <span class="annotation">★ ST_DWithin — subscribers within 160 km radius</span>
+      <span class="annotation">★ 14 deliberate migrations — full referential integrity</span>
+    </div>
+
+    <div class="connector"><div class="arrow"></div></div>
+
+    <!-- Notification -->
+    <p class="section-label">Notification layer</p>
+    <div class="row" style="margin-bottom:4px">
+      <div class="box amber" style="width:200px">
+        <span class="box-title">Broadcast engine</span>
+        <span class="box-sub">Fan-out to all channels</span>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px; gap:10px; flex-wrap:wrap; justify-content:center">
+      <div class="box green" style="width:140px">
+        <span class="box-title">SMS</span>
+        <span class="box-sub">Africa's Talking</span>
+      </div>
+      <div class="box green" style="width:140px">
+        <span class="box-title">Telegram</span>
+        <span class="box-sub">Push to subscribers</span>
+      </div>
+      <div class="box green" style="width:140px">
+        <span class="box-title">Push notify</span>
+        <span class="box-sub">PWA subscribers</span>
+      </div>
+      <div class="box green" style="width:140px">
+        <span class="box-title">NAPTIP bridge</span>
+        <span class="box-sub">Authority handoff</span>
+      </div>
+    </div>
+
+  </div><!-- /aws boundary -->
+
+  <!-- ══════════════════════════════ EXTERNAL ═══════════════════════════════════ -->
+  <div class="region ext" style="margin-top:24px">
+    <span class="region-label">External services — outside AWS/Alibaba boundary</span>
+    <div class="row" style="margin-top:8px; gap:8px; flex-wrap:wrap; justify-content:center">
+      <div class="box gray" style="width:140px">
+        <span class="box-title">WhatsApp API</span>
+        <span class="box-sub">Meta · Webhook</span>
+      </div>
+      <div class="box gray" style="width:140px">
+        <span class="box-title">Telegram API</span>
+        <span class="box-sub">Webhook</span>
+      </div>
+      <div class="box gray" style="width:150px">
+        <span class="box-title">Africa's Talking</span>
+        <span class="box-sub">SMS · USSD gateway</span>
+      </div>
+      <div class="box gray" style="width:130px">
+        <span class="box-title">Qwen API</span>
+        <span class="box-sub">Alibaba Cloud</span>
+      </div>
+      <div class="box gray" style="width:140px">
+        <span class="box-title">GDELT · ACLED</span>
+        <span class="box-sub">OSINT data feeds</span>
+      </div>
+      <div class="box gray" style="width:140px">
+        <span class="box-title">Nigeria RSS</span>
+        <span class="box-sub">News aggregation</span>
+      </div>
+      <div class="box gray" style="width:140px">
+        <span class="box-title">NAPTIP bridge</span>
+        <span class="box-sub">Gov integration</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ LEGEND ════════════════════════════════════ -->
+  <div class="legend">
+    <p class="legend-title">Legend</p>
+    <div class="legend-grid">
+      <div class="legend-item">
+        <span class="legend-swatch" style="background:#0d2818; border-color:#166534;"></span>
+        Citizen channels · notifications
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch" style="background:#0d1f38; border-color:#1e40af;"></span>
+        Application services
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch" style="background:#1a0d38; border-color:#6d28d9;"></span>
+        AI services
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch" style="background:#1c1007; border-color:#92400e;"></span>
+        Workflow · orchestration
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch" style="background:#1c0a0a; border-color:#991b1b;"></span>
+        AWS data stores
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch" style="background:#042f2e; border-color:#0f766e;"></span>
+        Operator tooling
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch" style="background:#111827; border-color:#374151;"></span>
+        External services
+      </div>
+      <div class="legend-item">
+        <span style="display:inline-block;width:28px;height:1px;background:#334155;border-top:1px solid #334155;flex-shrink:0"></span>
+        Synchronous request
+      </div>
+      <div class="legend-item">
+        <span style="display:inline-block;width:28px;height:1px;border-top:1px dashed #4b5563;flex-shrink:0"></span>
+        External · async
+      </div>
+    </div>
+  </div>
+
+</div><!-- /diagram -->
+</body>
+</html>

@@ -1,0 +1,29 @@
+# =============================================================================
+# RAVENCRY Whisper Service — .dockerignore
+# Keeps Python env, cache, and model files out of the build context
+# =============================================================================
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+venv
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.log
+.git
+.gitignore
+models
+*.md
+!README.md
+test_*.py
+*_test.py

@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, 'sanitize/**']
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Secret and PII scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail on committed secrets or real personal data
+        run: |
+          set -euo pipefail
+          failed=0
+
+          # Only .env.example may be tracked; real .env files must never be.
+          if git ls-files | grep -E '(^|/)\.env$|(^|/)\.env\.(local|prod|production|dev)$'; then
+            echo "::error::A real .env file is tracked. Remove it and rotate any exposed values."
+            failed=1
+          fi
+
+          # Terraform state and plans embed live resource IDs and must never be committed.
+          if git ls-files | grep -E 'tfplan|\.tfstate'; then
+            echo "::error::Terraform state/plan file is tracked."
+            failed=1
+          fi
+
+          # High-signal credential patterns.
+          if git grep -nIE 'sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY'; then
+            echo "::error::A credential-shaped string is present in tracked files."
+            failed=1
+          fi
+
+          exit $failed
+
+  vendor-crucix:
+    name: vendor/crucix tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        working-directory: vendor/crucix
+        run: npm install --no-audit --no-fund
+      - name: Test
+        working-directory: vendor/crucix
+        run: node --test

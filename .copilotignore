@@ -1,0 +1,23 @@
+# .antigravityignore
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Git metadata
+.git/
+.gitignore
+
+# AI/project rules
+AGENTS.md
+.agent/
+
+# Dependencies & build output
+node_modules/
+dist/
+build/
+
+# Logs
+*.log

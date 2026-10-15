@@ -1,0 +1,6 @@
+# RAVENCRY Whisper Service — Python dependencies
+# faster-whisper is CPU-optimised (CTranslate2 backend)
+faster-whisper==1.2.1
+flask==3.0.3
+gunicorn==22.0.0
+requests>=2.31.0

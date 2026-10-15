@@ -1,0 +1,15 @@
+# =============================================================================
+# RAVENCRY LLM Service — .dockerignore
+# Keeps node_modules, logs, and env files out of the Docker build context
+# =============================================================================
+node_modules
+npm-debug.log*
+.git
+.gitignore
+.env
+.env.*
+*.md
+!README.md
+dist
+coverage
+__tests__

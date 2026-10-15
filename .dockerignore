@@ -1,0 +1,40 @@
+# =============================================================================
+# RAVENCRY — Root .dockerignore
+# Excludes host artifacts from Docker build contexts (web + api use context: .)
+# =============================================================================
+
+# Dependencies (installed inside container)
+**/node_modules
+**/.pnpm-store
+
+# Next.js build output
+**/.next
+**/out
+
+# Build artifacts
+**/dist
+**/build
+**/.turbo
+
+# Version control
+.git
+.gitignore
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Docs (keep README for npm pack)
+*.md
+!README.md
+
+# Tests & coverage
+**/coverage
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+
+# OS junk
+.DS_Store
+Thumbs.db

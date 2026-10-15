@@ -1,0 +1,107 @@
+# =============================================================================
+# RAVENCRY — Dev Docker Compose Overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Compose Specification (no version field — deprecated in Compose v2)
+# =============================================================================
+
+services:
+  caddy:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+
+  api:
+    build:
+      target: dev
+    environment:
+      - NODE_ENV=development
+      - DEBUG=ravencry:*
+      - AUTO_APPROVE_FLASH=true
+    volumes:
+      - ./services/api/src:/app/src:ro
+      - ./packages/shared/src:/app/packages/shared/src:ro
+    command: ["npm", "run", "dev"]
+
+  crucix:
+    build:
+      target: dev
+    environment:
+      - NODE_ENV=development
+      - DEBUG=crucix:*
+      - SWEEP_INTERVAL_MS=60000
+    volumes:
+      - ./vendor/crucix:/app:ro
+    command: ["npm", "run", "dev"]
+
+  llm:
+    build:
+      target: dev
+    environment:
+      - NODE_ENV=development
+      - DEBUG=ravencry:llm:*
+    volumes:
+      - ./services/llm/src:/app/src:ro
+    command: ["npm", "run", "dev"]
+
+  sms:
+    build:
+      target: production
+    environment:
+      - NODE_ENV=development
+      - DEBUG=ravencry:sms:*
+      - AT_SENDER_ID=RAVENCRY
+    volumes:
+      - ./services/sms/src:/app/src:ro
+    command: ["npm", "run", "dev"]
+
+  whisper:
+    environment:
+      - FLASK_ENV=development
+      - WHISPER_MODEL=tiny
+    volumes:
+      - ./services/whisper:/app:ro
+
+  ussd:
+    build:
+      target: production
+    environment:
+      - NODE_ENV=development
+      - DEBUG=ravencry:ussd:*
+    volumes:
+      - ./services/ussd/src:/app/src:ro
+    command: ["npm", "run", "dev"]
+
+  n8n:
+    environment:
+      - NODE_ENV=development
+      - N8N_DIAGNOSTICS_ENABLED=true
+    volumes:
+      - ./n8n-workflows:/home/node/.n8n/workflows
+
+  appsmith:
+    environment:
+      - APPSMITH_MODE=DEV
+
+  # ---------------------------------------------------------------------------
+  # Dev Postgres (port 5433) — mirrors Aurora for local n8n testing
+  # Volume persists data across container restarts/removals.
+  # One-time setup: follow steps3_db_docker.md steps 2–5.
+  # ---------------------------------------------------------------------------
+  dev-postgres:
+    image: postgres:16
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_DB=ravencry
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - ravencry-net
+
+volumes:
+  pgdata:
+    name: ravencry-pgdata

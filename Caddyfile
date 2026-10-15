@@ -1,0 +1,109 @@
+# =============================================================================
+# RAVENCRY — Caddy Reverse Proxy Configuration
+# Routes public HTTPS traffic to internal Docker Compose services
+# =============================================================================
+
+# Global options
+{
+    email bayurzx@gmail.com   # ← any address you actually check (Let's Encrypt expiry notices only)
+    admin off
+    # auto_https is ON by default — Caddy provisions Let's Encrypt certs
+    # for every hostname in this file automatically.
+}
+
+# ---------------------------------------------------------------------------
+# Main API domain
+# ---------------------------------------------------------------------------
+api.ravencry.cv {
+    # Reject bot scanners with 410 Gone (signal "nothing here, stop probing")
+    @scanner path \
+        /.env \
+        /.git/* \
+        /.git/config \
+        /.git/HEAD \
+        /.DS_Store \
+        /wp-json* \
+        /xmlrpc.php \
+        /console* \
+        /___proxy* \
+        /v2/_catalog \
+        /login.action \
+        /config.json \
+        /s/* \
+        /META-INF* \
+        /ecp/* \
+        /about \
+        /graphql* \
+        /api/gql \
+        /api/graphql
+    respond @scanner 410
+
+    # Telegram webhook (public — Telegram servers POST here)
+    handle /telegram/* {
+        reverse_proxy telegram:3005
+        header {
+            X-Frame-Options DENY
+            X-Content-Type-Options nosniff
+        }
+    }
+
+    # SMS broadcast (service-to-service — internal only via API gateway)
+    # Protected by X-Service-Auth header (checked at application layer)
+    handle /sms/* {
+        reverse_proxy sms:3006
+        header {
+            X-Frame-Options DENY
+            X-Content-Type-Options nosniff
+        }
+    }
+
+    # USSD callback (public — Africa's Talking servers POST here)
+    handle /ussd/* {
+        reverse_proxy ussd:3007
+        header {
+            X-Frame-Options DENY
+            X-Content-Type-Options nosniff
+        }
+    }
+
+    # Everything else → API Gateway
+    handle {
+        reverse_proxy api:3003
+        header {
+            X-Frame-Options DENY
+            X-Content-Type-Options nosniff
+            Referrer-Policy strict-origin-when-cross-origin
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Crucix HUD (internal operators)
+# TODO: re-add IP whitelist after testing
+# ---------------------------------------------------------------------------
+crucix.ravencry.cv {
+    reverse_proxy crucix:3001
+}
+
+# ---------------------------------------------------------------------------
+# n8n Workflow Editor (internal operators)
+# TODO: re-add IP whitelist after testing
+# ---------------------------------------------------------------------------
+n8n.ravencry.cv {
+    reverse_proxy n8n:5678
+}
+
+# ---------------------------------------------------------------------------
+# Appsmith Ops Dashboard (internal)
+# TODO: re-add IP whitelist after testing
+# ---------------------------------------------------------------------------
+ops.ravencry.cv {
+    reverse_proxy appsmith:80
+}
+
+# ---------------------------------------------------------------------------
+# Apex + www — Next.js frontend
+# ---------------------------------------------------------------------------
+ravencry.cv, www.ravencry.cv {
+    reverse_proxy web:3000
+}

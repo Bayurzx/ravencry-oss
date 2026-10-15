@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ravencry Content Director"
+  short_description: "Scripts for useful, developer-first short videos"
+  default_prompt: "Use $ravencry-content-director to script a 60-second video about an engineering discovery in Ravencry."

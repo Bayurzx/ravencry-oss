@@ -1,0 +1,21 @@
+# Default owners for everything in the repository.
+# Replace @Bayurzx with the maintainer team handle once the org is set up,
+# e.g. @ravencry-labs/maintainers
+*                       @Bayurzx
+
+# Security-sensitive surfaces.
+/SECURITY.md            @Bayurzx
+/.github/workflows/     @Bayurzx
+/.env.example           @Bayurzx
+
+# Vendored third-party code — changes need attribution review.
+# See vendor/crucix/NOTICE.md
+/vendor/crucix/         @Bayurzx
+
+# Infrastructure and database migrations.
+/infra/                 @Bayurzx
+/db/migrations/         @Bayurzx
+
+# Active delivery board — keep ownership explicit.
+/prompt-system/specs/build-week-2026.md   @Bayurzx
+/docs/backlog.md        @Bayurzx

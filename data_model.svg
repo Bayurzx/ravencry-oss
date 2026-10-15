@@ -1,0 +1,398 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1080" width="100%"
+     font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif">
+<defs>
+  <!-- Standard arrow -->
+  <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 2L8 5L2 8" fill="none" stroke="#475569" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+  <!-- One end: single vertical bar (exactly-one) -->
+  <marker id="one" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+    <line x1="2" y1="1" x2="2" y2="9" stroke="#475569" stroke-width="1.5"/>
+    <line x1="5" y1="1" x2="5" y2="9" stroke="#475569" stroke-width="1.5"/>
+  </marker>
+  <!-- Many end: crow's foot (zero-or-many) -->
+  <marker id="many" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+    <path d="M8 5L2 1M8 5L2 9M8 5L2 5" fill="none" stroke="#475569" stroke-width="1.4" stroke-linecap="round"/>
+    <circle cx="8" cy="5" r="1.8" fill="none" stroke="#475569" stroke-width="1.2"/>
+  </marker>
+</defs>
+
+<!-- ─── PAGE TITLE ─── -->
+<text x="600" y="34" text-anchor="middle" font-size="11" font-weight="700" letter-spacing="2" fill="#64748b">RAVENCRY — DATA MODEL · 10 TABLES · 14 MIGRATIONS</text>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     TABLE HELPER: each table = header rect + header text + rows
+     Colors: fill=#1c0a0a stroke=#991b1b header-fill=#2d1010
+             PK rows: fill=#1c1007 text=#fcd34d
+             FK rows: fill=#042f2e text=#5eead4
+             Normal:  fill=#1c0a0a text=#fca5a5
+             Sub-text/type: fill=#f87171 opacity 0.7
+     ════════════════════════════════════════════════════════════════════════════ -->
+
+<!-- ══════════════════ persons  (x=30, y=60, w=240) ══════════════════ -->
+<!-- header -->
+<rect x="30" y="56" width="240" height="30" rx="7" fill="#2d1010" stroke="#991b1b" stroke-width="1"/>
+<rect x="30" y="73" width="240" height="13" fill="#2d1010" stroke="none"/><!-- header bottom square -->
+<text x="150" y="76" text-anchor="middle" font-size="12" font-weight="700" fill="#fca5a5">persons</text>
+<!-- rows -->
+<rect x="30" y="86" width="240" height="246" rx="0" fill="#1c0a0a" stroke="#991b1b" stroke-width="1"/>
+<rect x="30" y="320" width="240" height="12" rx="7" fill="#1c0a0a" stroke="#991b1b" stroke-width="1"/><!-- bottom round -->
+<!-- PK -->
+<rect x="30" y="86" width="240" height="26" fill="#1c1007"/>
+<text x="42" y="103" font-size="10" font-weight="600" fill="#fcd34d">id</text>
+<text x="265" y="103" text-anchor="end" font-size="9" fill="#fbbf24" opacity="0.8">UUID · PK</text>
+<!-- fields -->
+<line x1="30" y1="112" x2="270" y2="112" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="127" font-size="10" fill="#fca5a5">full_name</text>
+<text x="265" y="127" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">VARCHAR</text>
+<line x1="30" y1="133" x2="270" y2="133" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="148" font-size="10" fill="#fca5a5">age_estimate</text>
+<text x="265" y="148" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">SMALLINT</text>
+<line x1="30" y1="154" x2="270" y2="154" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="169" font-size="10" fill="#fca5a5">gender</text>
+<text x="265" y="169" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">enum: male|female|unknown</text>
+<line x1="30" y1="175" x2="270" y2="175" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="190" font-size="10" fill="#fca5a5">clothing_desc</text>
+<text x="265" y="190" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TEXT</text>
+<line x1="30" y1="196" x2="270" y2="196" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="211" font-size="10" fill="#fca5a5">photo_s3_key</text>
+<text x="265" y="211" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TEXT</text>
+<line x1="30" y1="217" x2="270" y2="217" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="232" font-size="10" fill="#fca5a5">created_at</text>
+<text x="265" y="232" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TIMESTAMPTZ</text>
+<line x1="30" y1="238" x2="270" y2="238" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="253" font-size="10" fill="#fca5a5">updated_at</text>
+<text x="265" y="253" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TIMESTAMPTZ</text>
+<!-- bottom border -->
+<rect x="30" y="56" width="240" height="206" rx="7" fill="none" stroke="#991b1b" stroke-width="1"/>
+
+<!-- ══════════════════ cases  (x=310, y=60, w=280) ══════════════════ -->
+<rect x="310" y="56" width="280" height="30" rx="7" fill="#2d1010" stroke="#991b1b" stroke-width="1"/>
+<rect x="310" y="73" width="280" height="13" fill="#2d1010"/>
+<text x="450" y="76" text-anchor="middle" font-size="12" font-weight="700" fill="#fca5a5">cases</text>
+<!-- PK -->
+<rect x="310" y="86" width="280" height="26" fill="#1c1007"/>
+<text x="322" y="103" font-size="10" font-weight="600" fill="#fcd34d">id</text>
+<text x="585" y="103" text-anchor="end" font-size="9" fill="#fbbf24" opacity="0.8">VARCHAR · PK · NR-YYYY-NNNNNN</text>
+<!-- FK -->
+<rect x="310" y="112" width="280" height="26" fill="#042f2e"/>
+<text x="322" y="129" font-size="10" font-weight="600" fill="#5eead4">person_id</text>
+<text x="585" y="129" text-anchor="end" font-size="9" fill="#2dd4bf" opacity="0.85">UUID · FK → persons.id</text>
+<!-- fields -->
+<line x1="310" y1="138" x2="590" y2="138" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="322" y="153" font-size="10" fill="#fca5a5">status</text>
+<text x="585" y="153" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">enum: pending_sweep→…→false_report</text>
+<line x1="310" y1="159" x2="590" y2="159" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="322" y="174" font-size="10" fill="#fca5a5">alert_tier</text>
+<text x="585" y="174" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">enum: FLASH|PRIORITY|ROUTINE</text>
+<line x1="310" y1="180" x2="590" y2="180" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="322" y="195" font-size="10" fill="#fca5a5">circumstance</text>
+<text x="585" y="195" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">enum: abduction|missing|…|unknown</text>
+<line x1="310" y1="201" x2="590" y2="201" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="322" y="216" font-size="10" fill="#fca5a5">last_seen_coords</text>
+<text x="585" y="216" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">PostGIS POINT 4326</text>
+<line x1="310" y1="222" x2="590" y2="222" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="322" y="237" font-size="10" fill="#fca5a5">input_channel</text>
+<text x="585" y="237" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">enum: whatsapp|telegram|ussd|sms|pwa|…</text>
+<line x1="310" y1="243" x2="590" y2="243" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="322" y="258" font-size="10" fill="#fca5a5">language_code</text>
+<text x="585" y="258" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">enum: en|ha|yo|ig|pcm|mixed</text>
+<line x1="310" y1="264" x2="590" y2="264" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="322" y="279" font-size="10" fill="#fca5a5">raw_report</text>
+<text x="585" y="279" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TEXT</text>
+<line x1="310" y1="285" x2="590" y2="285" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="322" y="300" font-size="10" fill="#fca5a5">qwen_confidence</text>
+<text x="585" y="300" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">REAL</text>
+<line x1="310" y1="306" x2="590" y2="306" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="322" y="321" font-size="10" fill="#fca5a5">trust_score</text>
+<text x="585" y="321" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">REAL</text>
+<line x1="310" y1="327" x2="590" y2="327" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="322" y="342" font-size="10" fill="#fca5a5">antifake_verdict</text>
+<text x="585" y="342" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TEXT</text>
+<line x1="310" y1="348" x2="590" y2="348" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="322" y="363" font-size="10" fill="#fca5a5">created_at / updated_at</text>
+<text x="585" y="363" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TIMESTAMPTZ</text>
+<rect x="310" y="56" width="280" height="316" rx="7" fill="none" stroke="#991b1b" stroke-width="1"/>
+
+<!-- ══════════════════ sightings  (x=630, y=56, w=250) ══════════════════ -->
+<rect x="630" y="56" width="250" height="30" rx="7" fill="#2d1010" stroke="#991b1b" stroke-width="1"/>
+<rect x="630" y="73" width="250" height="13" fill="#2d1010"/>
+<text x="755" y="76" text-anchor="middle" font-size="12" font-weight="700" fill="#fca5a5">sightings</text>
+<!-- PK -->
+<rect x="630" y="86" width="250" height="26" fill="#1c1007"/>
+<text x="642" y="103" font-size="10" font-weight="600" fill="#fcd34d">id</text>
+<text x="875" y="103" text-anchor="end" font-size="9" fill="#fbbf24" opacity="0.8">UUID · PK</text>
+<!-- FK -->
+<rect x="630" y="112" width="250" height="26" fill="#042f2e"/>
+<text x="642" y="129" font-size="10" font-weight="600" fill="#5eead4">case_id</text>
+<text x="875" y="129" text-anchor="end" font-size="9" fill="#2dd4bf" opacity="0.85">VARCHAR · FK → cases.id</text>
+<!-- fields -->
+<line x1="630" y1="138" x2="880" y2="138" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="642" y="153" font-size="10" fill="#fca5a5">status</text>
+<text x="875" y="153" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">enum: unprocessed|…|rejected</text>
+<line x1="630" y1="159" x2="880" y2="159" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="642" y="174" font-size="10" fill="#fca5a5">description</text>
+<text x="875" y="174" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TEXT</text>
+<line x1="630" y1="180" x2="880" y2="180" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="642" y="195" font-size="10" fill="#fca5a5">sighting_coords</text>
+<text x="875" y="195" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">PostGIS POINT 4326</text>
+<line x1="630" y1="201" x2="880" y2="201" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="642" y="216" font-size="10" fill="#fca5a5">input_channel</text>
+<text x="875" y="216" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">enum</text>
+<line x1="630" y1="222" x2="880" y2="222" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="642" y="237" font-size="10" fill="#fca5a5">trust_score</text>
+<text x="875" y="237" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">REAL</text>
+<line x1="630" y1="243" x2="880" y2="243" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="642" y="258" font-size="10" fill="#fca5a5">photo_s3_key</text>
+<text x="875" y="258" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TEXT</text>
+<line x1="630" y1="264" x2="880" y2="264" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="642" y="279" font-size="10" fill="#fca5a5">created_at</text>
+<text x="875" y="279" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TIMESTAMPTZ</text>
+<rect x="630" y="56" width="250" height="232" rx="7" fill="none" stroke="#991b1b" stroke-width="1"/>
+
+<!-- ══════════════════ alerts  (x=900, y=56, w=270) ══════════════════ -->
+<rect x="900" y="56" width="270" height="30" rx="7" fill="#2d1010" stroke="#991b1b" stroke-width="1"/>
+<rect x="900" y="73" width="270" height="13" fill="#2d1010"/>
+<text x="1035" y="76" text-anchor="middle" font-size="12" font-weight="700" fill="#fca5a5">alerts</text>
+<!-- PK -->
+<rect x="900" y="86" width="270" height="26" fill="#1c1007"/>
+<text x="912" y="103" font-size="10" font-weight="600" fill="#fcd34d">id</text>
+<text x="1165" y="103" text-anchor="end" font-size="9" fill="#fbbf24" opacity="0.8">UUID · PK</text>
+<!-- FK -->
+<rect x="900" y="112" width="270" height="26" fill="#042f2e"/>
+<text x="912" y="129" font-size="10" font-weight="600" fill="#5eead4">case_id</text>
+<text x="1165" y="129" text-anchor="end" font-size="9" fill="#2dd4bf" opacity="0.85">VARCHAR · FK → cases.id</text>
+<!-- fields -->
+<line x1="900" y1="138" x2="1170" y2="138" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="153" font-size="10" fill="#fca5a5">tier</text>
+<text x="1165" y="153" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">enum: FLASH|PRIORITY|ROUTINE</text>
+<line x1="900" y1="159" x2="1170" y2="159" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="174" font-size="10" fill="#fca5a5">status</text>
+<text x="1165" y="174" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">enum: pending|approved|suppressed|broadcast</text>
+<line x1="900" y1="180" x2="1170" y2="180" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="195" font-size="10" fill="#fca5a5">channels</text>
+<text x="1165" y="195" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">array: sms|telegram|whatsapp|push|naptip</text>
+<line x1="900" y1="201" x2="1170" y2="201" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="216" font-size="10" fill="#fca5a5">sms_count</text>
+<text x="1165" y="216" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">INT</text>
+<line x1="900" y1="222" x2="1170" y2="222" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="237" font-size="10" fill="#fca5a5">telegram_sent / whatsapp_sent</text>
+<text x="1165" y="237" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">BOOLEAN</text>
+<line x1="900" y1="243" x2="1170" y2="243" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="258" font-size="10" fill="#fca5a5">naptip_sent / push_sent</text>
+<text x="1165" y="258" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">BOOLEAN</text>
+<line x1="900" y1="264" x2="1170" y2="264" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="279" font-size="10" fill="#fca5a5">created_at</text>
+<text x="1165" y="279" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TIMESTAMPTZ</text>
+<rect x="900" y="56" width="270" height="232" rx="7" fill="none" stroke="#991b1b" stroke-width="1"/>
+
+<!-- ══════════════════ subscribers  (x=30, y=430, w=270) ══════════════════ -->
+<rect x="30" y="430" width="270" height="30" rx="7" fill="#2d1010" stroke="#991b1b" stroke-width="1"/>
+<rect x="30" y="447" width="270" height="13" fill="#2d1010"/>
+<text x="165" y="450" text-anchor="middle" font-size="12" font-weight="700" fill="#fca5a5">subscribers</text>
+<!-- PK -->
+<rect x="30" y="460" width="270" height="26" fill="#1c1007"/>
+<text x="42" y="477" font-size="10" font-weight="600" fill="#fcd34d">id</text>
+<text x="295" y="477" text-anchor="end" font-size="9" fill="#fbbf24" opacity="0.8">UUID · PK</text>
+<!-- fields -->
+<line x1="30" y1="486" x2="300" y2="486" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="501" font-size="10" fill="#fca5a5">phone_encrypted</text>
+<text x="295" y="501" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TEXT · AES-256-GCM</text>
+<line x1="30" y1="507" x2="300" y2="507" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="522" font-size="10" fill="#fca5a5">phone_hash</text>
+<text x="295" y="522" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TEXT · SHA-256</text>
+<line x1="30" y1="528" x2="300" y2="528" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="543" font-size="10" fill="#fca5a5">lga / state</text>
+<text x="295" y="543" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">VARCHAR</text>
+<line x1="30" y1="549" x2="300" y2="549" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="564" font-size="10" fill="#fca5a5">location</text>
+<text x="295" y="564" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">PostGIS POINT 4326</text>
+<line x1="30" y1="570" x2="300" y2="570" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="585" font-size="10" fill="#fca5a5">subscribed_at</text>
+<text x="295" y="585" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TIMESTAMPTZ</text>
+<line x1="30" y1="591" x2="300" y2="591" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="606" font-size="10" fill="#fca5a5">active</text>
+<text x="295" y="606" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">BOOLEAN</text>
+<rect x="30" y="430" width="270" height="184" rx="7" fill="none" stroke="#991b1b" stroke-width="1"/>
+
+<!-- ══════════════════ push_subscriptions  (x=330, y=430, w=270) ══════════════════ -->
+<rect x="330" y="430" width="270" height="30" rx="7" fill="#2d1010" stroke="#991b1b" stroke-width="1"/>
+<rect x="330" y="447" width="270" height="13" fill="#2d1010"/>
+<text x="465" y="450" text-anchor="middle" font-size="12" font-weight="700" fill="#fca5a5">push_subscriptions</text>
+<!-- PK -->
+<rect x="330" y="460" width="270" height="26" fill="#1c1007"/>
+<text x="342" y="477" font-size="10" font-weight="600" fill="#fcd34d">id</text>
+<text x="595" y="477" text-anchor="end" font-size="9" fill="#fbbf24" opacity="0.8">UUID · PK</text>
+<!-- FK -->
+<rect x="330" y="486" width="270" height="26" fill="#042f2e"/>
+<text x="342" y="503" font-size="10" font-weight="600" fill="#5eead4">subscriber_id</text>
+<text x="595" y="503" text-anchor="end" font-size="9" fill="#2dd4bf" opacity="0.85">UUID · FK → subscribers.id</text>
+<!-- fields -->
+<line x1="330" y1="512" x2="600" y2="512" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="342" y="527" font-size="10" fill="#fca5a5">endpoint</text>
+<text x="595" y="527" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TEXT</text>
+<line x1="330" y1="533" x2="600" y2="533" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="342" y="548" font-size="10" fill="#fca5a5">auth</text>
+<text x="595" y="548" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TEXT</text>
+<line x1="330" y1="554" x2="600" y2="554" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="342" y="569" font-size="10" fill="#fca5a5">p256dh</text>
+<text x="595" y="569" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TEXT</text>
+<line x1="330" y1="575" x2="600" y2="575" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="342" y="590" font-size="10" fill="#fca5a5">created_at</text>
+<text x="595" y="590" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TIMESTAMPTZ</text>
+<rect x="330" y="430" width="270" height="168" rx="7" fill="none" stroke="#991b1b" stroke-width="1"/>
+
+<!-- ══════════════════ operators  (x=630, y=430, w=250) ══════════════════ -->
+<rect x="630" y="430" width="250" height="30" rx="7" fill="#2d1010" stroke="#991b1b" stroke-width="1"/>
+<rect x="630" y="447" width="250" height="13" fill="#2d1010"/>
+<text x="755" y="450" text-anchor="middle" font-size="12" font-weight="700" fill="#fca5a5">operators</text>
+<!-- PK -->
+<rect x="630" y="460" width="250" height="26" fill="#1c1007"/>
+<text x="642" y="477" font-size="10" font-weight="600" fill="#fcd34d">id</text>
+<text x="875" y="477" text-anchor="end" font-size="9" fill="#fbbf24" opacity="0.8">UUID · PK</text>
+<!-- fields -->
+<line x1="630" y1="486" x2="880" y2="486" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="642" y="501" font-size="10" fill="#fca5a5">email</text>
+<text x="875" y="501" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">VARCHAR</text>
+<line x1="630" y1="507" x2="880" y2="507" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="642" y="522" font-size="10" fill="#fca5a5">password_hash</text>
+<text x="875" y="522" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TEXT</text>
+<line x1="630" y1="528" x2="880" y2="528" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="642" y="543" font-size="10" fill="#fca5a5">role</text>
+<text x="875" y="543" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">enum: moderator|senior|admin|investigator</text>
+<line x1="630" y1="549" x2="880" y2="549" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="642" y="564" font-size="10" fill="#fca5a5">active</text>
+<text x="875" y="564" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">BOOLEAN</text>
+<line x1="630" y1="570" x2="880" y2="570" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="642" y="585" font-size="10" fill="#fca5a5">last_login_at / created_at</text>
+<text x="875" y="585" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TIMESTAMPTZ</text>
+<rect x="630" y="430" width="250" height="163" rx="7" fill="none" stroke="#991b1b" stroke-width="1"/>
+
+<!-- ══════════════════ sources  (x=900, y=430, w=270) ══════════════════ -->
+<rect x="900" y="430" width="270" height="30" rx="7" fill="#2d1010" stroke="#991b1b" stroke-width="1"/>
+<rect x="900" y="447" width="270" height="13" fill="#2d1010"/>
+<text x="1035" y="450" text-anchor="middle" font-size="12" font-weight="700" fill="#fca5a5">sources</text>
+<!-- PK -->
+<rect x="900" y="460" width="270" height="26" fill="#1c1007"/>
+<text x="912" y="477" font-size="10" font-weight="600" fill="#fcd34d">id</text>
+<text x="1165" y="477" text-anchor="end" font-size="9" fill="#fbbf24" opacity="0.8">UUID · PK</text>
+<!-- fields -->
+<line x1="900" y1="486" x2="1170" y2="486" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="501" font-size="10" fill="#fca5a5">name</text>
+<text x="1165" y="501" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">VARCHAR</text>
+<line x1="900" y1="507" x2="1170" y2="507" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="522" font-size="10" fill="#fca5a5">type</text>
+<text x="1165" y="522" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">enum: rss|api|citizen</text>
+<line x1="900" y1="528" x2="1170" y2="528" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="543" font-size="10" fill="#fca5a5">status</text>
+<text x="1165" y="543" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">VARCHAR</text>
+<line x1="900" y1="549" x2="1170" y2="549" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="564" font-size="10" fill="#fca5a5">last_sweep_at</text>
+<text x="1165" y="564" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TIMESTAMPTZ</text>
+<line x1="900" y1="570" x2="1170" y2="570" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="585" font-size="10" fill="#fca5a5">error_count</text>
+<text x="1165" y="585" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">INT</text>
+<line x1="900" y1="591" x2="1170" y2="591" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="912" y="606" font-size="10" fill="#fca5a5">created_at</text>
+<text x="1165" y="606" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TIMESTAMPTZ</text>
+<rect x="900" y="430" width="270" height="184" rx="7" fill="none" stroke="#991b1b" stroke-width="1"/>
+
+<!-- ══════════════════ lga_coords  (x=30, y=720, w=240) ══════════════════ -->
+<rect x="30" y="720" width="240" height="30" rx="7" fill="#2d1010" stroke="#991b1b" stroke-width="1"/>
+<rect x="30" y="737" width="240" height="13" fill="#2d1010"/>
+<text x="150" y="740" text-anchor="middle" font-size="12" font-weight="700" fill="#fca5a5">lga_coords</text>
+<!-- PK -->
+<rect x="30" y="750" width="240" height="26" fill="#1c1007"/>
+<text x="42" y="767" font-size="10" font-weight="600" fill="#fcd34d">lga_name</text>
+<text x="265" y="767" text-anchor="end" font-size="9" fill="#fbbf24" opacity="0.8">VARCHAR · PK</text>
+<!-- fields -->
+<line x1="30" y1="776" x2="270" y2="776" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="791" font-size="10" fill="#fca5a5">state</text>
+<text x="265" y="791" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">VARCHAR</text>
+<line x1="30" y1="797" x2="270" y2="797" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="42" y="812" font-size="10" fill="#fca5a5">center</text>
+<text x="265" y="812" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">PostGIS POINT 4326</text>
+<rect x="30" y="720" width="240" height="100" rx="7" fill="none" stroke="#991b1b" stroke-width="1"/>
+
+<!-- ══════════════════ ussd_rate_limits  (x=300, y=720, w=280) ══════════════════ -->
+<rect x="300" y="720" width="280" height="30" rx="7" fill="#2d1010" stroke="#991b1b" stroke-width="1"/>
+<rect x="300" y="737" width="280" height="13" fill="#2d1010"/>
+<text x="440" y="740" text-anchor="middle" font-size="12" font-weight="700" fill="#fca5a5">ussd_rate_limits</text>
+<!-- PK -->
+<rect x="300" y="750" width="280" height="26" fill="#1c1007"/>
+<text x="312" y="767" font-size="10" font-weight="600" fill="#fcd34d">phone_hash</text>
+<text x="575" y="767" text-anchor="end" font-size="9" fill="#fbbf24" opacity="0.8">TEXT · PK · SHA-256</text>
+<!-- fields -->
+<line x1="300" y1="776" x2="580" y2="776" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="312" y="791" font-size="10" fill="#fca5a5">session_id</text>
+<text x="575" y="791" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">VARCHAR</text>
+<line x1="300" y1="797" x2="580" y2="797" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="312" y="812" font-size="10" fill="#fca5a5">last_request_at</text>
+<text x="575" y="812" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TIMESTAMPTZ</text>
+<line x1="300" y1="818" x2="580" y2="818" stroke="#991b1b" stroke-width="0.4" opacity="0.5"/>
+<text x="312" y="833" font-size="10" fill="#fca5a5">expires_at</text>
+<text x="575" y="833" text-anchor="end" font-size="9" fill="#f87171" opacity="0.7">TIMESTAMPTZ · 24 h TTL</text>
+<rect x="300" y="720" width="280" height="121" rx="7" fill="none" stroke="#991b1b" stroke-width="1"/>
+
+<!-- RELATIONSHIPS: crow's-foot notation. one end = single bar, many end = crow's foot -->
+
+<!-- persons one-to-many cases (reported_as)
+     Elbow: persons PK right (270,99) -> midpoint (290,99) -> down to (290,125) -> cases FK left (310,125) -->
+<polyline points="270,99 290,99 290,125 310,125"
+      fill="none" stroke="#475569" stroke-width="1.2"
+      marker-start="url(#one)" marker-end="url(#many)"/>
+<rect x="254" y="104" width="72" height="14" rx="3" fill="#111827"/>
+<text x="290" y="115" text-anchor="middle" font-size="9" fill="#64748b">reported_as</text>
+
+<!-- cases one-to-many sightings (has)
+     Elbow: cases PK right (590,99) -> midpoint (610,99) -> down to (610,125) -> sightings FK left (630,125) -->
+<polyline points="590,99 610,99 610,125 630,125"
+      fill="none" stroke="#475569" stroke-width="1.2"
+      marker-start="url(#one)" marker-end="url(#many)"/>
+<rect x="594" y="104" width="32" height="14" rx="3" fill="#111827"/>
+<text x="610" y="115" text-anchor="middle" font-size="9" fill="#64748b">has</text>
+
+<!-- cases one-to-many alerts (triggers)
+     Elbow: cases PK right (590,99) -> (760,99) -> up to (760,71) -> alerts FK left (900,71) -->
+<polyline points="590,99 760,99 760,71 900,71"
+      fill="none" stroke="#475569" stroke-width="1.2"
+      marker-start="url(#one)" marker-end="url(#many)"/>
+<rect x="704" y="57" width="46" height="14" rx="3" fill="#111827"/>
+<text x="727" y="68" text-anchor="middle" font-size="9" fill="#64748b">triggers</text>
+
+<!-- subscribers one-to-many push_subscriptions (registered_on)
+     Elbow: subscribers PK right (300,477) -> (315,477) -> down (315,460) -> push FK left (330,460) -->
+<polyline points="300,477 315,477 315,460 330,460"
+      fill="none" stroke="#475569" stroke-width="1.2"
+      marker-start="url(#one)" marker-end="url(#many)"/>
+<rect x="276" y="461" width="80" height="14" rx="3" fill="#111827"/>
+<text x="316" y="472" text-anchor="middle" font-size="9" fill="#64748b">registered_on</text>
+
+<!-- LEGEND -->
+<rect x="630" y="720" width="540" height="118" rx="7" fill="none" stroke="#374151" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="900" y="742" text-anchor="middle" font-size="10" font-weight="700" letter-spacing="2" fill="#475569">LEGEND</text>
+
+<!-- PK swatch -->
+<rect x="648" y="752" width="80" height="20" rx="3" fill="#1c1007" stroke="#92400e" stroke-width="0.8"/>
+<text x="688" y="766" text-anchor="middle" font-size="9" font-weight="600" fill="#fcd34d">PK field</text>
+<!-- FK swatch -->
+<rect x="648" y="780" width="80" height="20" rx="3" fill="#042f2e" stroke="#0f766e" stroke-width="0.8"/>
+<text x="688" y="794" text-anchor="middle" font-size="9" font-weight="600" fill="#5eead4">FK field</text>
+<!-- normal swatch -->
+<rect x="648" y="808" width="80" height="20" rx="3" fill="#1c0a0a" stroke="#991b1b" stroke-width="0.8"/>
+<text x="688" y="822" text-anchor="middle" font-size="9" fill="#fca5a5">Normal field</text>
+
+<!-- relationship line samples -->
+<line x1="760" y1="762" x2="820" y2="762" stroke="#475569" stroke-width="1.2"
+      marker-start="url(#one)" marker-end="url(#many)"/>
+<text x="826" y="766" font-size="9" fill="#94a3b8">One-to-many ( ||──o{ )</text>
+
+<!-- PostGIS note -->
+<rect x="760" y="790" width="150" height="20" rx="3" fill="#1c1007" stroke="#92400e" stroke-width="0.8"/>
+<text x="835" y="804" text-anchor="middle" font-size="9" fill="#f59e0b">PostGIS POINT 4326</text>
+<text x="916" y="804" font-size="9" fill="#94a3b8">— geo columns</text>
+
+<!-- Migration note -->
+<text x="760" y="826" font-size="9" fill="#64748b">★ 14 deliberate migrations · ussd_rate_limits = migration 015</text>
+
+</svg>

@@ -1,0 +1,58 @@
+name: Feature request
+description: Propose a new capability or an improvement
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check [`docs/backlog.md`](../blob/HEAD/docs/backlog.md) first — the feature may already be
+        tracked, and [`docs/feature-map.md`](../blob/HEAD/docs/feature-map.md) shows the intended
+        scope.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What is missing or painful today? Describe the need, not the solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Citizen reporting (web / PWA)
+        - Intake channels (WhatsApp / SMS / USSD)
+        - Evidence briefing desk
+        - Alert delivery
+        - OSINT / intelligence sources
+        - Infrastructure / deployment
+        - Documentation / tooling
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Design constraints
+      description: See [CONTRIBUTING.md](../blob/HEAD/CONTRIBUTING.md) for the full list.
+      options:
+        - label: This does **not** make alert broadcast autonomous (human approval stays required).
+          required: true
+        - label: This does **not** add facial recognition or store raw biometric data.
+          required: true
+        - label: This can be demonstrated live or from deterministic fixtures.
+          required: true

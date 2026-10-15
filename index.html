@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAVENCRY — Nigeria AI Rapid Alert System</title>
+  <meta name="description" content="Real-time AI-powered missing persons and crisis alert system for Nigeria. Multi-channel alerts via WhatsApp, Telegram, USSD, SMS, and web.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ======== RESET & BASE ======== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-card: #16161f;
+      --bg-card-hover: #1c1c28;
+      --text-primary: #f0f0f5;
+      --text-secondary: #8a8a9a;
+      --text-muted: #5a5a6a;
+      --accent-red: #e53e3e;
+      --accent-amber: #f6ad55;
+      --accent-green: #48bb78;
+      --accent-blue: #4299e1;
+      --accent-purple: #9f7aea;
+      --gradient-alert: linear-gradient(135deg, #e53e3e 0%, #f6ad55 100%);
+      --gradient-hero: linear-gradient(135deg, #e53e3e20 0%, #f6ad5510 50%, #4299e110 100%);
+      --border-subtle: rgba(255,255,255,0.06);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow-glow: 0 0 60px rgba(229,62,62,0.15);
+      --font: 'Inter', -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+    
+    body {
+      font-family: var(--font);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ======== UTILITY ======== */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    .gradient-text {
+      background: var(--gradient-alert);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .badge-flash { background: rgba(229,62,62,0.15); color: var(--accent-red); border: 1px solid rgba(229,62,62,0.3); }
+    .badge-priority { background: rgba(246,173,85,0.15); color: var(--accent-amber); border: 1px solid rgba(246,173,85,0.3); }
+    .badge-routine { background: rgba(72,187,120,0.15); color: var(--accent-green); border: 1px solid rgba(72,187,120,0.3); }
+
+    /* ======== NAV ======== */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 16px 0;
+      backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(10,10,15,0.7);
+      border-bottom: 1px solid var(--border-subtle);
+      transition: all 0.3s ease;
+    }
+    nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+    .nav-logo .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--gradient-alert);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(229,62,62,0.4); }
+      50% { box-shadow: 0 0 20px 4px rgba(229,62,62,0.2); }
+    }
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-cta {
+      padding: 10px 24px !important;
+      background: var(--gradient-alert) !important;
+      color: white !important;
+      border-radius: 100px;
+      font-weight: 600 !important;
+      transition: transform 0.2s, box-shadow 0.2s !important;
+    }
+    .nav-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(229,62,62,0.4);
+    }
+
+    /* ======== HERO ======== */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      padding-top: 80px;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background: url('apps/web/public/hero-bg.png') center/cover no-repeat;
+      opacity: 0.2;
+      filter: blur(1px);
+    }
+    .hero-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, var(--bg-primary) 0%, transparent 30%, transparent 70%, var(--bg-primary) 100%);
+    }
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
+    }
+    .hero .container { position: relative; z-index: 1; text-align: center; }
+    .hero-badge {
+      margin-bottom: 24px;
+      animation: fadeInUp 0.6s ease;
+    }
+    .hero-badge .badge {
+      background: rgba(229,62,62,0.1);
+      border: 1px solid rgba(229,62,62,0.2);
+      color: var(--accent-red);
+    }
+    .hero-badge .badge .pulse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent-red);
+      animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      animation: fadeInUp 0.6s ease 0.1s backwards;
+    }
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--text-secondary);
+      max-width: 640px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+      animation: fadeInUp 0.6s ease 0.2s backwards;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: fadeInUp 0.6s ease 0.3s backwards;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      border-radius: 100px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      cursor: pointer;
+      border: none;
+      font-family: var(--font);
+    }
+    .btn-primary {
+      background: var(--gradient-alert);
+      color: white;
+      box-shadow: 0 4px 20px rgba(229,62,62,0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(229,62,62,0.4);
+    }
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255,255,255,0.12);
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ======== STATS BAR ======== */
+    .stats-bar {
+      padding: 40px 0;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      text-align: center;
+    }
+    .stat-item h3 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .stat-item p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ======== SECTION COMMON ======== */
+    section { padding: 100px 0; }
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .section-header h2 {
+      font-size: clamp(1.75rem, 4vw, 2.75rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+    .section-header p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ======== CHANNELS ======== */
+    .channels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .channel-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: default;
+    }
+    .channel-card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255,255,255,0.12);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-glow);
+    }
+    .channel-icon {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 1.5rem;
+    }
+    .channel-card h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .channel-card p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ======== HOW IT WORKS ======== */
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 32px;
+      position: relative;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 36px;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-red), var(--accent-amber), var(--accent-green), transparent);
+      opacity: 0.3;
+    }
+    .timeline-step {
+      text-align: center;
+      position: relative;
+    }
+    .step-number {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      position: relative;
+      z-index: 1;
+    }
+    .timeline-step h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .timeline-step p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ======== TIERS ======== */
+    .tiers-section { background: var(--bg-secondary); }
+    .tiers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .tier-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 32px;
+      border: 1px solid var(--border-subtle);
+      transition: all 0.3s ease;
+    }
+    .tier-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-glow);
+    }
+    .tier-card h4 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 12px 0 8px;
+    }
+    .tier-card p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .tier-examples {
+      list-style: none;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .tier-examples li {
+      padding: 6px 0;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tier-examples li::before { content: '→'; color: var(--text-muted); }
+
+    /* ======== TECH STACK ======== */
+    .stack-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 16px;
+    }
+    .stack-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 20px 16px;
+      text-align: center;
+      transition: all 0.25s ease;
+    }
+    .stack-item:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255,255,255,0.1);
+      transform: translateY(-2px);
+    }
+    .stack-item .stack-icon {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .stack-item .stack-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .stack-item .stack-role {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* ======== ARCHITECTURE ======== */
+    .arch-section { background: var(--bg-secondary); }
+    .arch-diagram {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 40px;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      overflow-x: auto;
+      white-space: pre;
+      position: relative;
+    }
+    .arch-diagram .highlight { color: var(--accent-red); font-weight: 500; }
+    .arch-diagram .accent { color: var(--accent-amber); }
+    .arch-diagram .dim { color: var(--text-muted); }
+
+    /* ======== CTA ======== */
+    .cta-section {
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-glow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(229,62,62,0.12) 0%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .cta-section h2 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .cta-section p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin: 0 auto 32px;
+      position: relative;
+    }
+
+    /* ======== FOOTER ======== */
+    footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--border-subtle);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+    footer .container { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      flex-wrap: wrap; 
+      gap: 16px; 
+    }
+    footer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    footer a:hover { color: var(--text-primary); }
+
+    /* ======== MOBILE ======== */
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+      .timeline::before { display: none; }
+      .nav-links { display: none; }
+      .hero { padding-top: 100px; }
+      section { padding: 64px 0; }
+      .arch-diagram { padding: 20px; font-size: 0.65rem; }
+      footer .container { justify-content: center; text-align: center; }
+    }
+
+    /* ======== SCROLL ANIMATIONS ======== */
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="container">
+      <a href="#" class="nav-logo">
+        <div class="logo-icon">🦅</div>
+        RAVENCRY
+      </a>
+      <div class="nav-links">
+        <a href="#channels">Channels</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#tiers">Alert Tiers</a>
+        <a href="#stack">Tech Stack</a>
+        <a href="#report" class="nav-cta">Report Missing Person</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+    <div class="container">
+      <div class="hero-badge">
+        <span class="badge badge-flash">
+          <span class="pulse-dot"></span>
+          AI-Powered Real-Time Alerts
+        </span>
+      </div>
+      <h1>
+        Every Second Counts.<br>
+        <span class="gradient-text">RAVENCRY Responds.</span>
+      </h1>
+      <p>
+        Nigeria's AI-powered missing persons and crisis alert system. 
+        Multi-channel alerts in Hausa, Yoruba, Igbo, Pidgin & English — 
+        reaching citizens through WhatsApp, Telegram, USSD, SMS, and the web.
+      </p>
+      <div class="hero-actions">
+        <a href="#report" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          Report Now
+        </a>
+        <a href="#how-it-works" class="btn btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          See How It Works
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-item reveal">
+          <h3 class="gradient-text">5+</h3>
+          <p>Alert Channels</p>
+        </div>
+        <div class="stat-item reveal">
+          <h3 class="gradient-text">5</h3>
+          <p>Nigerian Languages</p>
+        </div>
+        <div class="stat-item reveal">
+          <h3 class="gradient-text">&lt;90s</h3>
+          <p>Report to Broadcast</p>
+        </div>
+        <div class="stat-item reveal">
+          <h3 class="gradient-text">774</h3>
+          <p>LGAs Covered</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHANNELS -->
+  <section id="channels">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2>Meet People <span class="gradient-text">Where They Are</span></h2>
+        <p>From smartphones in Lagos to feature phones in Zamfara — RAVENCRY reaches every Nigerian through the channel they already use.</p>
+      </div>
+      <div class="channels-grid">
+        <div class="channel-card reveal">
+          <div class="channel-icon" style="background: rgba(37,211,102,0.12); color: #25D366;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.79 23.79l4.925-1.29A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.239 0-4.308-.724-5.992-1.95l-.42-.312-2.92.764.78-2.844-.343-.546A9.935 9.935 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
+          </div>
+          <h4>WhatsApp</h4>
+          <p>Send reports via text, voice, or photo. AI understands all Nigerian languages.</p>
+        </div>
+        <div class="channel-card reveal">
+          <div class="channel-icon" style="background: rgba(0,136,204,0.12); color: #0088cc;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012.056 0h-.112zM9.122 7.063a.67.67 0 01.552.103l.187.108a5.9 5.9 0 00.13.074c.07.04.131.09.231.232l.834 1.137c.218.3.196.694-.052.938l-.441.411a.5.5 0 00-.158.473 4.4 4.4 0 001.148 2.116 4.4 4.4 0 002.116 1.148.5.5 0 00.473-.158l.411-.441c.244-.248.638-.27.938-.052l1.137.834c.142.1.192.161.232.231a5.9 5.9 0 00.074.13l.108.187a.67.67 0 01.103.552c-.069.282-.178.55-.325.796a3 3 0 01-.576.683c-.363.33-.834.602-1.43.744a3.7 3.7 0 01-1.382.043 9.4 9.4 0 01-3.357-1.378A11 11 0 017.87 12.3a9.4 9.4 0 01-1.378-3.358 3.7 3.7 0 01.043-1.382 3 3 0 01.744-1.43 3 3 0 01.683-.576c.246-.147.514-.256.796-.325a.8.8 0 01.363-.166z"/></svg>
+          </div>
+          <h4>Telegram</h4>
+          <p>Free, no phone number needed. Full report intake + real-time alert channel.</p>
+        </div>
+        <div class="channel-card reveal">
+          <div class="channel-icon" style="background: rgba(246,173,85,0.12); color: #F6AD55;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </div>
+          <h4>USSD *384*72836#</h4>
+          <p>Works on any phone. No internet needed. Critical for rural northern Nigeria.</p>
+        </div>
+        <div class="channel-card reveal">
+          <div class="channel-icon" style="background: rgba(66,153,225,0.12); color: #4299E1;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <h4>SMS</h4>
+          <p>Geofenced batch alerts to subscribers within 100km of the incident location.</p>
+        </div>
+        <div class="channel-card reveal">
+          <div class="channel-icon" style="background: rgba(159,122,234,0.12); color: #9F7AEA;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          </div>
+          <h4>PWA Web App</h4>
+          <p>Mobile-first progressive web app. Works offline. GPS location + photo upload.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how-it-works" style="background: var(--bg-secondary);">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2>From Report to <span class="gradient-text">Rescue</span></h2>
+        <p>AI-powered triage ensures the right people get the right alert at the right time.</p>
+      </div>
+      <div class="timeline">
+        <div class="timeline-step reveal">
+          <div class="step-number" style="background: rgba(229,62,62,0.15); color: var(--accent-red);">1</div>
+          <h4>Report</h4>
+          <p>Citizen reports via WhatsApp, Telegram, USSD, or web. Voice notes in Hausa auto-transcribed by Whisper AI.</p>
+        </div>
+        <div class="timeline-step reveal">
+          <div class="step-number" style="background: rgba(246,173,85,0.15); color: var(--accent-amber);">2</div>
+          <h4>AI Triage</h4>
+          <p>Qwen LLM extracts name, location, circumstance. Classifies severity: FLASH (child), PRIORITY, or ROUTINE.</p>
+        </div>
+        <div class="timeline-step reveal">
+          <div class="step-number" style="background: rgba(66,153,225,0.15); color: var(--accent-blue);">3</div>
+          <h4>Verify</h4>
+          <p>Anti-fake detection flags suspicious reports. Operator reviews and approves FLASH cases in under 60 seconds.</p>
+        </div>
+        <div class="timeline-step reveal">
+          <div class="step-number" style="background: rgba(72,187,120,0.15); color: var(--accent-green);">4</div>
+          <h4>Broadcast</h4>
+          <p>Geofenced alerts blast to Telegram, SMS, Web Push, and NAPTIP — all within 90 seconds of the original report.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALERT TIERS -->
+  <section id="tiers" class="tiers-section">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2>Three-Tier <span class="gradient-text">Alert System</span></h2>
+        <p>Inspired by the AMBER Alert model, adapted for Nigeria's unique security landscape.</p>
+      </div>
+      <div class="tiers-grid">
+        <div class="tier-card reveal">
+          <span class="badge badge-flash">⚡ FLASH</span>
+          <h4>Immediate Broadcast</h4>
+          <p>Child abductions, high-risk states (Zamfara, Borno, Kaduna), weapons involved. Broadcast within 90 seconds.</p>
+          <ul class="tier-examples">
+            <li>Child under 14 abducted in Zamfara</li>
+            <li>Multiple victims, armed kidnappers</li>
+            <li>Witness report with vehicle plate</li>
+          </ul>
+        </div>
+        <div class="tier-card reveal">
+          <span class="badge badge-priority">🔶 PRIORITY</span>
+          <h4>Urgent Investigation</h4>
+          <p>Adult missing in dangerous area, ransom demands, or OSINT-corroborated case. Reviewed within 4 hours.</p>
+          <ul class="tier-examples">
+            <li>Adult missing &gt;24h in conflict zone</li>
+            <li>OSINT news correlates with citizen report</li>
+            <li>Multiple reports for same incident</li>
+          </ul>
+        </div>
+        <div class="tier-card reveal">
+          <span class="badge badge-routine">✅ ROUTINE</span>
+          <h4>Monitored Case</h4>
+          <p>Low-risk missing person, possibly voluntary. Listed on platform, periodic OSINT sweep. Reviewed within 24 hours.</p>
+          <ul class="tier-examples">
+            <li>Adult missing in urban area, no foul play</li>
+            <li>Elderly person not returned home</li>
+            <li>Runaway teenager (no danger indicators)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section id="stack">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2>Built With <span class="gradient-text">Modern AI</span></h2>
+        <p>LLM-agnostic architecture. Swap between Qwen, OpenAI, Gemini, or DeepSeek with one env var.</p>
+      </div>
+      <div class="stack-grid reveal">
+        <div class="stack-item">
+          <span class="stack-icon">🧠</span>
+          <div class="stack-name">Qwen AI</div>
+          <div class="stack-role">LLM Triage</div>
+        </div>
+        <div class="stack-item">
+          <span class="stack-icon">🎤</span>
+          <div class="stack-name">Whisper</div>
+          <div class="stack-role">Voice → Text</div>
+        </div>
+        <div class="stack-item">
+          <span class="stack-icon">🔗</span>
+          <div class="stack-name">n8n</div>
+          <div class="stack-role">Workflow Engine</div>
+        </div>
+        <div class="stack-item">
+          <span class="stack-icon">🛡️</span>
+          <div class="stack-name">Crucix</div>
+          <div class="stack-role">OSINT Engine</div>
+        </div>
+        <div class="stack-item">
+          <span class="stack-icon">⚡</span>
+          <div class="stack-name">Next.js</div>
+          <div class="stack-role">PWA Frontend</div>
+        </div>
+        <div class="stack-item">
+          <span class="stack-icon">🐘</span>
+          <div class="stack-name">PostgreSQL</div>
+          <div class="stack-role">PostGIS Database</div>
+        </div>
+        <div class="stack-item">
+          <span class="stack-icon">☁️</span>
+          <div class="stack-name">AWS</div>
+          <div class="stack-role">RDS · DynamoDB · S3</div>
+        </div>
+        <div class="stack-item">
+          <span class="stack-icon">🗺️</span>
+          <div class="stack-name">Leaflet</div>
+          <div class="stack-role">Maps · Geofence</div>
+        </div>
+        <div class="stack-item">
+          <span class="stack-icon">🐳</span>
+          <div class="stack-name">Docker</div>
+          <div class="stack-role">EC2 Containers</div>
+        </div>
+        <div class="stack-item">
+          <span class="stack-icon">🔒</span>
+          <div class="stack-name">Caddy</div>
+          <div class="stack-role">Auto HTTPS</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section class="arch-section">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2>System <span class="gradient-text">Architecture</span></h2>
+        <p>A multi-layered pipeline from citizen reports to geofenced alert broadcasts.</p>
+      </div>
+      <div class="arch-diagram reveal">
+<span class="dim">INGESTION</span>
+  Citizens → <span class="highlight">[WhatsApp]</span> <span class="highlight">[Telegram]</span> <span class="highlight">[PWA]</span> <span class="highlight">[USSD *384*72836#]</span> <span class="highlight">[SMS]</span>
+  OSINT    → <span class="accent">[Crucix]</span> monitoring NAPTIP · GDELT · Nigerian News RSS
+                    │
+                    ▼
+<span class="dim">AI TRIAGE</span>
+  <span class="accent">[Whisper]</span> → voice transcription (Hausa/Yoruba/Igbo/Pidgin)
+  <span class="accent">[Qwen LLM]</span> → extract fields → classify severity → anti-fake check
+                    │
+                    ▼
+<span class="dim">PROCESSING</span>
+  <span class="accent">[n8n Workflows]</span> → orchestrate intake · triage · broadcast pipelines
+  <span class="accent">[Appsmith]</span> → operator dashboard · approve/suppress · case management
+                    │
+                    ▼
+<span class="dim">DATA LAYER</span>
+  <span class="highlight">RDS PostgreSQL</span>: cases · persons · sightings · subscribers · alerts
+  DynamoDB: sweep log · audit trail · sessions
+  S3: media (photos · videos · voice notes)
+                    │
+                    ▼
+<span class="dim">BROADCAST</span>
+  <span class="highlight">[Telegram Channel]</span> + <span class="highlight">[SMS Batch]</span> + <span class="highlight">[Web Push]</span> + <span class="highlight">[NAPTIP Bridge]</span>
+  Geofenced to subscribers within 100km · delivered in &lt;90 seconds</div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="report" class="cta-section">
+    <div class="cta-glow"></div>
+    <div class="container reveal">
+      <h2>Help Bring <span class="gradient-text">Someone Home</span></h2>
+      <p>Every report matters. Every second counts. Multiple ways to reach us.</p>
+      <div class="hero-actions" style="margin-bottom: 40px;">
+        <a href="https://wa.me/placeholder" class="btn btn-primary" target="_blank">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+          WhatsApp
+        </a>
+        <a href="https://t.me/ravencry_alert_bot" class="btn btn-secondary" target="_blank">
+          Telegram Bot
+        </a>
+        <a href="tel:*384%23" class="btn btn-secondary">
+          Dial *384*72836#
+        </a>
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-muted);">
+        Built for the <strong>Qwen Cloud Hackathon</strong> & <strong>H01 Devpost</strong> · Nigeria 🇳🇬
+      </p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <div>
+        <span style="font-weight: 600;">RAVENCRY</span> — Real-time AI for Vigilance, Event Notification, and Crisis Response Yielding
+      </div>
+      <div>
+        <a href="https://github.com/ravencry-labs/ravencry" target="_blank">GitHub</a> · 
+        <a href="https://devpost.com" target="_blank">Devpost</a> · 
+        June 2026
+      </div>
+    </div>
+  </footer>
+
+  <!-- SCROLL REVEAL -->
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Nav shadow on scroll
+    const nav = document.querySelector('nav');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 20) {
+        nav.style.boxShadow = '0 4px 30px rgba(0,0,0,0.3)';
+      } else {
+        nav.style.boxShadow = 'none';
+      }
+    });
+
+    // Smooth counter animation for stats
+    const counters = document.querySelectorAll('.stat-item h3');
+    const statsObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.parentElement.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.5 });
+    counters.forEach(c => statsObserver.observe(c));
+  </script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+erDiagram
+
+    %% ── RAVENCRY Data Model ERD ──
+    %% 10 tables: 9 core + ussd_rate_limits (migration 015)
+    %% Enum types annotated as comments on FK source columns
+
+    persons {
+        UUID id PK "PK"
+        VARCHAR full_name
+        SMALLINT age_estimate
+        GENDER gender "enum: male|female|unknown"
+        TEXT clothing_desc
+        TEXT photo_s3_key
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    cases {
+        VARCHAR id PK "NR-YYYY-NNNNNN"
+        UUID person_id FK "→ persons.id"
+        CASE_STATUS status "enum: pending_sweep→…→false_report"
+        ALERT_TIER alert_tier "enum: FLASH|PRIORITY|ROUTINE"
+        CIRCUMSTANCE circumstance "enum: abduction|missing|witnessed_kidnapping|unknown"
+        GEOGRAPHY last_seen_coords "PostGIS POINT 4326"
+        INPUT_CHANNEL input_channel "enum: whatsapp|telegram|ussd|sms|pwa|osint|manual"
+        LANGUAGE_CODE language_code "enum: en|ha|yo|ig|pcm|mixed"
+        TEXT raw_report
+        REAL qwen_confidence
+        REAL trust_score
+        TEXT antifake_verdict
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+
+    sightings {
+        UUID id PK "PK"
+        VARCHAR case_id FK "→ cases.id"
+        SIGHTING_STATUS status "enum: unprocessed|under_review|confirmed|rejected"
+        TEXT description
+        GEOGRAPHY sighting_coords "PostGIS POINT 4326"
+        INPUT_CHANNEL input_channel "enum"
+        REAL trust_score
+        TEXT photo_s3_key
+        TIMESTAMPTZ created_at
+    }
+
+    alerts {
+        UUID id PK "PK"
+        VARCHAR case_id FK "→ cases.id"
+        ALERT_TIER tier "enum: FLASH|PRIORITY|ROUTINE"
+        ALERT_STATUS status "enum: pending|approved|suppressed|broadcast"
+        TEXT channels "array: sms|telegram|whatsapp|push|naptip"
+        INT sms_count
+        BOOLEAN telegram_sent
+        BOOLEAN whatsapp_sent
+        BOOLEAN naptip_sent
+        BOOLEAN push_sent
+        TIMESTAMPTZ created_at
+    }
+
+    subscribers {
+        UUID id PK "PK"
+        TEXT phone_encrypted "AES-256-GCM"
+        TEXT phone_hash "SHA-256"
+        VARCHAR lga
+        VARCHAR state
+        GEOGRAPHY location "PostGIS POINT 4326"
+        TIMESTAMPTZ subscribed_at
+        BOOLEAN active
+    }
+
+    push_subscriptions {
+        UUID id PK "PK"
+        UUID subscriber_id FK "→ subscribers.id"
+        TEXT endpoint
+        TEXT auth
+        TEXT p256dh
+        TIMESTAMPTZ created_at
+    }
+
+    operators {
+        UUID id PK "PK"
+        VARCHAR email
+        TEXT password_hash
+        OPERATOR_ROLE role "enum: moderator|senior|admin|investigator"
+        BOOLEAN active
+        TIMESTAMPTZ last_login_at
+        TIMESTAMPTZ created_at
+    }
+
+    sources {
+        UUID id PK "PK"
+        VARCHAR name
+        SOURCE_TYPE type "enum: rss|api|citizen"
+        VARCHAR status
+        TIMESTAMPTZ last_sweep_at
+        INT error_count
+        TIMESTAMPTZ created_at
+    }
+
+    lga_coords {
+        VARCHAR lga_name PK "PK"
+        VARCHAR state
+        GEOGRAPHY center "PostGIS POINT 4326"
+    }
+
+    ussd_rate_limits {
+        TEXT phone_hash PK "PK  SHA-256"
+        VARCHAR session_id
+        TIMESTAMPTZ last_request_at
+        TIMESTAMPTZ expires_at
+    }
+
+    %% ── Relationships ──
+
+    persons ||--o{ cases : "reported_as"
+    cases ||--o{ sightings : "has"
+    cases ||--o{ alerts : "triggers"
+    subscribers ||--o{ push_subscriptions : "registered_on"

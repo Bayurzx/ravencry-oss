@@ -1,0 +1,70 @@
+{
+  "_description": "RAVENCRY alert message templates for FLASH/PRIORITY/ROUTINE tiers. Used by n8n webhook consumers and Crucix alert delivery.",
+  "_version": "1.0.0",
+  "_updated": "2026-06-21",
+
+  "flash": {
+    "whatsapp": {
+      "template": "🚨 *RAVENCRY FLASH ALERT* 🚨\n\n{summary}\n\n📍 Location: {location}\n🕐 Reported: {time}\n📋 Case: #{caseId}\n\n_Send sightings via WhatsApp or dial *384*72836#_",
+      "variables": ["summary", "location", "time", "caseId"]
+    },
+    "sms": {
+      "template": "RAVENCRY FLASH: {summary}. Location: {location}. Case #{caseId}. Report sightings: *384*72836#",
+      "variables": ["summary", "location", "caseId"]
+    },
+    "telegram": {
+      "template": "🔴 *FLASH ALERT — RAVENCRY*\n\n{summary}\n\n📍 *Location:* {location}\n🕐 *Time:* {time}\n📋 *Case:* #{caseId}\n🎯 *Tier:* FLASH\n📡 *Source:* {source}\n\n_Send sightings to @ravencry_alert_bot or dial *384*72836#_",
+      "variables": ["summary", "location", "time", "caseId", "source"]
+    },
+    "push": {
+      "title": "🚨 FLASH: {name}",
+      "body": "{summary} — {location}",
+      "variables": ["name", "summary", "location"]
+    },
+    "naptip": {
+      "template": "FLASH ALERT: {summary} — {location}. Case #{caseId}. Source: {source}. Contact RAVENCRY Ops for full briefing.",
+      "variables": ["summary", "location", "caseId", "source"]
+    }
+  },
+
+  "priority": {
+    "whatsapp": {
+      "template": "🟡 *RAVENCRY PRIORITY ALERT*\n\n{summary}\n\n📍 Location: {location}\n🕐 Reported: {time}\n\n_Stay alert. Report sightings via WhatsApp._",
+      "variables": ["summary", "location", "time"]
+    },
+    "sms": {
+      "template": "RAVENCRY PRIORITY: {summary}. Location: {location}. Stay alert, report suspicious activity.",
+      "variables": ["summary", "location"]
+    },
+    "telegram": {
+      "template": "🟡 *PRIORITY ALERT — RAVENCRY*\n\n{summary}\n\n📍 *Location:* {location}\n🕐 *Time:* {time}\n📡 *Source:* {source}\n\n_Report sightings: @ravencry_alert_bot_",
+      "variables": ["summary", "location", "time", "source"]
+    },
+    "push": {
+      "title": "🟡 Priority: {name}",
+      "body": "{summary} — {location}",
+      "variables": ["name", "summary", "location"]
+    }
+  },
+
+  "routine": {
+    "telegram": {
+      "template": "🔵 *ROUTINE — RAVENCRY*\n\n{summary}\n\n📍 {location} | 📡 {source}\n\n_FYI — no action required._",
+      "variables": ["summary", "location", "source"]
+    },
+    "push": {
+      "title": "🔵 {name}",
+      "body": "{summary} — {location}",
+      "variables": ["name", "summary", "location"]
+    }
+  },
+
+  "testAlert": {
+    "summary": "TEST: Suspicious activity reported near {location}",
+    "name": "Test Alert",
+    "location": "Abuja-Kaduna expressway, KM 45",
+    "time": "2026-06-21T10:00:00Z",
+    "caseId": "TEST-001",
+    "source": "Crucix OSINT Sweep"
+  }
+}

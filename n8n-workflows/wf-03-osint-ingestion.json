@@ -1,0 +1,506 @@
+{
+  "name": "WF-03 OSINT Ingestion Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        832,
+        96
+      ],
+      "id": "74c6dc97-8782-4bbb-b6a3-f5cd5ba54a9c",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        0
+      ],
+      "id": "e69cb500-c382-44a2-8501-e5fe80b219f3",
+      "name": "No Operation, do nothing1"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"skip_reason\": \"duplicate — case #123 (sim=0.87)\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1712,
+        -112
+      ],
+      "id": "93021243-90d7-4d0e-bd30-2b721fee23da",
+      "name": "False (duplicate exists)"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "crucix-flash",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c0d8ef7a-935f-4e24-b343-4a4e11da66c0",
+      "name": "Webhook Trigger",
+      "webhookId": "c64eef50-462a-48be-88ec-77a5fa9f7891",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "lAQ74NPhRqUGmqVd",
+          "name": "X-WEBHOOK-SECRET"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "sources",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "c671cec7-b165-416e-bbe8-730fcde626ef",
+      "name": "Split Out: sources"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "events",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "9e8c4e2a-8598-47bb-ae72-33b45fae7903",
+      "name": "Split Events"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8d03fbaf-51bf-4198-b68b-4887dbabfa61",
+              "leftValue": "={{ $json.events.relevanceScore }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "aaaeff3e-b97e-41ca-9af4-9d8014578243",
+              "leftValue": "={{ $json.events.type }}",
+              "rightValue": "=kidnapping",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "39308a61-71d8-4aca-b0dc-f53cbaf7345a",
+              "leftValue": "={{ $json.events.type }}",
+              "rightValue": "banditry-high-casualty",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "ace0273a-268d-4c7b-8e20-24111b86bd5e",
+      "name": "IF — Skip Non-FLASH Events"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.LLM_SERVICE_URL }}/classify-osint",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"headline\": \"{{ $json.events.title }}\",\n  \"snippet\": \"Location: {{ $json.events.location }}. State: {{ $json.events.state }}.\",\n  \"source\": \"Crucix-OSINT\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        832,
+        -96
+      ],
+      "id": "2ae59b81-9b13-424c-b9b4-8acea72b9288",
+      "name": "Qwen Classify"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "53e3aef4-e3d5-49e5-96fb-4cbc2ac6ba34",
+              "leftValue": "={{ $json.actionable }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "f3698530-0b42-4974-b735-6b892939e776",
+              "leftValue": "={{ $json.tier }}",
+              "rightValue": "IGNORE",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "6f494f1b-a0cc-4540-a99b-c62ad90db53f",
+              "leftValue": "={{ $json.create_draft_case }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        -96
+      ],
+      "id": "d94ab39e-516b-4d64-996d-f8567e2e2601",
+      "name": "IF — Actionable Check"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  id,\n  similarity(raw_report, '{{ $node[\"Split Events\"].json.events.title }} {{ $node[\"Split Events\"].json.events.location }}') AS sim_score\nFROM cases\nWHERE\n  status IN ('pending_triage', 'pending_review', 'pending_sweep')\n  AND raw_report IS NOT NULL\n  AND similarity(raw_report, '{{ $node[\"Split Events\"].json.events.title }} {{ $node[\"Split Events\"].json.events.location }}') > 0.35\nORDER BY sim_score DESC\nLIMIT 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1296,
+        -208
+      ],
+      "id": "53e88ac6-f2b5-4334-99b6-8d9376a6011a",
+      "name": "Postgres — Dedup Check",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "3D3O2UGu1nbS6i0x",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b95086a3-dc16-4f89-baa6-cfa0a8291004",
+              "leftValue": "={{ $json.id === undefined }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1504,
+        -208
+      ],
+      "id": "229eff85-e37a-4f27-83d0-94d4b5d94ae2",
+      "name": "IF — Duplicate Gate"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO cases (\n  status,\n  alert_tier,\n  circumstance,\n  last_seen_location,\n  last_seen_state,\n  input_channel,\n  language,\n  raw_report,\n  qwen_confidence,\n  qwen_severity_reason,\n  antifake_verdict\n) VALUES (\n  'pending_review',\n  '{{ $node[\"Qwen Classify\"].json.tier }}',\n  'witnessed_kidnapping',\n  '{{ $node[\"Split Events\"].json.events.location || \"\" }}',\n  '{{ $node[\"Split Events\"].json.events.state || \"\" }}',\n  'osint',\n  'en',\n  '{{ $node[\"Split Events\"].json.events.title }} — Source: Crucix OSINT. Location: {{ $node[\"Split Events\"].json.events.location }}',\n  0.7,\n  '{{ $node[\"Qwen Classify\"].json.reasoning || \"\" }}',\n  'osint-auto'\n)\nRETURNING id, status, alert_tier;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1712,
+        -304
+      ],
+      "id": "4df33849-f612-4750-a394-f335c91f2311",
+      "name": "Postgres — INSERT Draft Case",
+      "credentials": {
+        "postgres": {
+          "id": "3D3O2UGu1nbS6i0x",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ff724d96-a28c-4bf0-b54c-f3e88f5a8eb0",
+              "name": "case_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "e785e49f-d389-4391-9b36-458fda6ed81f",
+              "name": "case_status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "5fd75e52-b4cb-4dc1-b636-7ca9592b9007",
+              "name": "case_tier",
+              "value": "={{ $json.alert_tier }}",
+              "type": "string"
+            },
+            {
+              "id": "f8be6513-c99a-4169-8bea-11b31fe8f071",
+              "name": "workflow_stage",
+              "value": "case-created",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1920,
+        -304
+      ],
+      "id": "159f5699-5b37-49ac-9b06-023bfc3410e3",
+      "name": "Set — Enrich with Case ID"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"workflow\": \"wf-03-osint-ingestion\",\n  \"total_received\": {{ $itemIndex }},\n  \"cases_created\": {{ $runIndex }},\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2128,
+        -304
+      ],
+      "id": "ba79a60f-0ed4-48e3-a366-2ee2c08d5a18",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Split Out: sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out: sources": {
+      "main": [
+        [
+          {
+            "node": "Split Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Events": {
+      "main": [
+        [
+          {
+            "node": "IF — Skip Non-FLASH Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF — Skip Non-FLASH Events": {
+      "main": [
+        [
+          {
+            "node": "Qwen Classify",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qwen Classify": {
+      "main": [
+        [
+          {
+            "node": "IF — Actionable Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF — Actionable Check": {
+      "main": [
+        [
+          {
+            "node": "Postgres — Dedup Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres — Dedup Check": {
+      "main": [
+        [
+          {
+            "node": "IF — Duplicate Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF — Duplicate Gate": {
+      "main": [
+        [
+          {
+            "node": "Postgres — INSERT Draft Case",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "False (duplicate exists)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres — INSERT Draft Case": {
+      "main": [
+        [
+          {
+            "node": "Set — Enrich with Case ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set — Enrich with Case ID": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "895d0432-215a-4b1a-9413-18873409a948",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1a73af096ae4e3c694344bcea0ea8606542d8e9fe33e38585d20b0cfe5ba2341"
+  },
+  "id": "kk2AxCqkHUEnjXbV",
+  "tags": []
+}
