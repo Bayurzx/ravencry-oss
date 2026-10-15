@@ -191,3 +191,6 @@ pending_features.md
 /TODO.md
 docs/pre-merge-exposure-audit.md
 docs/branch-divergence-master-vs-main.md
+
+# Local git hook copies - contain the pre-push guard patterns
+scripts/git-hooks/
